@@ -2,9 +2,20 @@ import { apiRequest } from '../../lib/api'
 import { getAllResults } from '../../lib/pagination'
 import type { Category, PaginatedResponse, Product, ProductVariant } from '../../types/api'
 
-export function getProducts(search = '', page = 1) {
+export type ProductListFilters = {
+  search?: string
+  page?: number
+  categoryId?: string
+  stockStatus?: string
+  ordering?: string
+}
+
+export function getProducts({ search = '', page = 1, categoryId = '', stockStatus = '', ordering = '' }: ProductListFilters = {}) {
   const params = new URLSearchParams({ page: String(page) })
   if (search) params.set('search', search)
+  if (categoryId) params.set('category_id', categoryId)
+  if (stockStatus) params.set('stock_status', stockStatus)
+  if (ordering) params.set('ordering', ordering)
   return apiRequest<PaginatedResponse<Product>>(`/catalog/products/?${params}`)
 }
 

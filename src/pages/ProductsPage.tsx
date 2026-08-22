@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Box, Grid2X2, LoaderCircle, PackageX, Plus, SlidersHorizontal, X } from 'lucide-react'
+import { ArrowLeft, Box, Grid2X2, LoaderCircle, PackageX, Plus, RotateCcw, SlidersHorizontal, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState, FilterButton, Pagination, SearchBox, StatusBadge } from '../components/UI'
@@ -22,10 +22,15 @@ function getProductStatus(product: Product) {
 export function ProductsPage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [categoryId, setCategoryId] = useState('')
+  const [stockStatus, setStockStatus] = useState('')
+  const [ordering, setOrdering] = useState('')
   const [isCreateOpen, setCreateOpen] = useState(false)
+  const { data: categories } = useQuery({ queryKey: ['categories', 'product-filters'], queryFn: getAllCategories })
   const { data, isPending, isError, error } = useQuery({
-    queryKey: ['products', search, page],
-    queryFn: () => getProducts(search, page),
+    queryKey: ['products', search, page, categoryId, stockStatus, ordering],
+    queryFn: () => getProducts({ search, page, categoryId, stockStatus, ordering }),
   })
   const products = useMemo(() => data?.results ?? [], [data?.results])
   const totals = useMemo(() => products.reduce((result, product) => {
@@ -38,7 +43,8 @@ export function ProductsPage() {
   return (
     <div className="page list-page">
       <SearchBox placeholder="جستجو در محصولات..." value={search} onChange={(value) => { setSearch(value); setPage(1) }} />
-      <div className="filters"><FilterButton icon={Grid2X2}>دسته‌بندی</FilterButton><FilterButton icon={SlidersHorizontal}>وضعیت موجودی</FilterButton><FilterButton icon={SlidersHorizontal}>مرتب‌سازی</FilterButton></div>
+      <div className="filters"><FilterButton icon={Grid2X2} active={Boolean(categoryId)} onClick={() => setFiltersOpen((value) => !value)}>دسته‌بندی</FilterButton><FilterButton icon={SlidersHorizontal} active={Boolean(stockStatus)} onClick={() => setFiltersOpen((value) => !value)}>وضعیت موجودی</FilterButton><FilterButton icon={SlidersHorizontal} active={Boolean(ordering)} onClick={() => setFiltersOpen((value) => !value)}>مرتب‌سازی</FilterButton></div>
+      {filtersOpen && <section className="filter-panel card"><label>دسته‌بندی<select value={categoryId} onChange={(event) => { setCategoryId(event.target.value); setPage(1) }}><option value="">همه دسته‌بندی‌ها</option>{categories?.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label>وضعیت موجودی<select value={stockStatus} onChange={(event) => { setStockStatus(event.target.value); setPage(1) }}><option value="">همه وضعیت‌ها</option><option value="in_stock">موجود</option><option value="low_stock">کم‌موجود</option><option value="out_of_stock">ناموجود</option></select></label><label>مرتب‌سازی<select value={ordering} onChange={(event) => { setOrdering(event.target.value); setPage(1) }}><option value="">قدیمی‌ترین</option><option value="-created">جدیدترین</option><option value="name">نام: الف تا ی</option><option value="-name">نام: ی تا الف</option></select></label><button className="filter-reset" type="button" onClick={() => { setCategoryId(''); setStockStatus(''); setOrdering(''); setPage(1) }}><RotateCcw /> پاک‌کردن فیلترها</button></section>}
       <button className="primary-button" onClick={() => setCreateOpen(true)}><Plus /> افزودن محصول جدید</button>
       <div className="summary-card card three-columns">
         <div><Box /><strong>{data?.count ?? '—'}</strong><span>کل محصولات</span></div>

@@ -1,10 +1,22 @@
 import { apiRequest } from '../../lib/api'
 import type { PaginatedResponse, Sale, SaleItem } from '../../types/api'
 
-export function getSales(status = '', search = '', page = 1) {
+export type SaleListFilters = {
+  status?: string
+  search?: string
+  page?: number
+  channel?: string
+  dateFrom?: string
+  dateTo?: string
+}
+
+export function getSales({ status = '', search = '', page = 1, channel = '', dateFrom = '', dateTo = '' }: SaleListFilters = {}) {
   const params = new URLSearchParams({ page: String(page) })
   if (status) params.set('status', status)
   if (search) params.set('search', search)
+  if (channel) params.set('channel', channel)
+  if (dateFrom) params.set('date_from', dateFrom)
+  if (dateTo) params.set('date_to', dateTo)
   return apiRequest<PaginatedResponse<Sale>>(`/sales/?${params}`)
 }
 

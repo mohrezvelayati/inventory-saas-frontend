@@ -23,9 +23,9 @@ export function SearchBox({
   )
 }
 
-export function FilterButton({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
+export function FilterButton({ icon: Icon, children, active = false, onClick }: { icon: LucideIcon; children: ReactNode; active?: boolean; onClick?: () => void }) {
   return (
-    <button className="filter-button">
+    <button type="button" className={`filter-button ${active ? 'active' : ''}`} onClick={onClick} aria-pressed={active}>
       <Icon size={19} />
       <span>{children}</span>
       <ChevronDown size={15} />

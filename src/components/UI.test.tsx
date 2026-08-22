@@ -1,6 +1,18 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import { SlidersHorizontal } from 'lucide-react'
 import { describe, expect, it, vi } from 'vitest'
-import { Pagination } from './UI'
+import { FilterButton, Pagination } from './UI'
+
+describe('FilterButton', () => {
+  it('exposes its active state and click action', () => {
+    const onClick = vi.fn()
+    render(<FilterButton icon={SlidersHorizontal} active onClick={onClick}>فیلتر فعال</FilterButton>)
+    const button = screen.getByRole('button', { name: /فیلتر فعال/ })
+    expect(button).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(button)
+    expect(onClick).toHaveBeenCalledOnce()
+  })
+})
 
 describe('Pagination', () => {
   it('is hidden when all records fit on one page', () => {

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, CalendarDays, CheckCircle2, LoaderCircle, Plus, ShoppingBag, Store } from 'lucide-react'
+import { ArrowLeft, CalendarDays, CheckCircle2, LoaderCircle, Plus, RotateCcw, ShoppingBag, Store } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState, FilterButton, Pagination, SearchBox, StatusBadge } from '../components/UI'
@@ -16,8 +16,12 @@ const channelLabels: Record<Sale['channel'], string> = { store: 'حضوری', in
 export function SalesPage() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
+  const [channel, setChannel] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [page, setPage] = useState(1)
-  const { data, isPending, isError, error } = useQuery({ queryKey: ['sales', status, search, page], queryFn: () => getSales(status, search, page) })
+  const { data, isPending, isError, error } = useQuery({ queryKey: ['sales', status, search, page, channel, dateFrom, dateTo], queryFn: () => getSales({ status, search, page, channel, dateFrom, dateTo }) })
   const sales = data?.results ?? []
   const completed = data?.results.filter((item) => item.status === 'completed') ?? []
   const drafts = data?.results.filter((item) => item.status === 'draft') ?? []
@@ -26,10 +30,11 @@ export function SalesPage() {
   return (
     <div className="page list-page">
       <SearchBox placeholder="جستجو با شماره فروش یا مشتری..." value={search} onChange={(value) => { setSearch(value); setPage(1) }} />
-      <div className="filters"><FilterButton icon={CheckCircle2}>وضعیت</FilterButton><FilterButton icon={CalendarDays}>بازه زمانی</FilterButton><FilterButton icon={Store}>کانال فروش</FilterButton></div>
+      <div className="filters"><FilterButton icon={CheckCircle2} active={Boolean(status)} onClick={() => setFiltersOpen((value) => !value)}>وضعیت</FilterButton><FilterButton icon={CalendarDays} active={Boolean(dateFrom || dateTo)} onClick={() => setFiltersOpen((value) => !value)}>بازه زمانی</FilterButton><FilterButton icon={Store} active={Boolean(channel)} onClick={() => setFiltersOpen((value) => !value)}>کانال فروش</FilterButton></div>
       <div className="status-tabs">
         {[{ value: '', label: 'همه' }, { value: 'completed', label: 'تکمیل‌شده' }, { value: 'draft', label: 'پیش‌نویس' }, { value: 'cancelled', label: 'لغوشده' }].map((item) => <button key={item.value} className={status === item.value ? 'active' : ''} onClick={() => { setStatus(item.value); setPage(1) }}>{item.label}</button>)}
       </div>
+      {filtersOpen && <section className="filter-panel card"><label>وضعیت<select value={status} onChange={(event) => { setStatus(event.target.value); setPage(1) }}><option value="">همه وضعیت‌ها</option><option value="completed">تکمیل‌شده</option><option value="draft">پیش‌نویس</option><option value="cancelled">لغوشده</option></select></label><label>کانال فروش<select value={channel} onChange={(event) => { setChannel(event.target.value); setPage(1) }}><option value="">همه کانال‌ها</option>{Object.entries(channelLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><div className="filter-date-row"><label>از تاریخ<input type="date" value={dateFrom} onChange={(event) => { const value = event.target.value; setDateFrom(value); if (dateTo && dateTo < value) setDateTo(''); setPage(1) }} /></label><label>تا تاریخ<input type="date" min={dateFrom} value={dateTo} onChange={(event) => { setDateTo(event.target.value); setPage(1) }} /></label></div><button className="filter-reset" type="button" onClick={() => { setStatus(''); setChannel(''); setDateFrom(''); setDateTo(''); setPage(1) }}><RotateCcw /> پاک‌کردن فیلترها</button></section>}
       <Link className="primary-button primary-link" to="/sales/new"><Plus /> ثبت فروش جدید</Link>
       <div className="summary-card card three-columns">
         <div><ShoppingBag /><strong>{revenue.toLocaleString('fa-IR')}</strong><span>فروش این صفحه</span></div>
