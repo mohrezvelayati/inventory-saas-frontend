@@ -1,8 +1,8 @@
 import { apiRequest } from '../../lib/api'
 import type { MemberPermission, PaginatedResponse, StoreMember, StorePermission } from '../../types/api'
 
-export function getMembers() {
-  return apiRequest<PaginatedResponse<StoreMember>>('/stores/members/')
+export function getMembers(page = 1) {
+  return apiRequest<PaginatedResponse<StoreMember>>(`/stores/members/?page=${page}`)
 }
 
 export function inviteMember(input: { invite_username: string; role: StoreMember['role'] }) {

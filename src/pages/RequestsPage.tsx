@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Box, CalendarDays, Clock3, LoaderCircle, MessageCircleMore, Plus, TrendingUp, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { EmptyState, FilterButton, Pagination, SearchBox, StatusBadge } from '../components/UI'
-import { getProducts } from '../features/products/productApi'
+import { getAllProducts } from '../features/products/productApi'
 import { createWantedProduct, getWantedProducts } from '../features/wanted/wantedApi'
 import { ApiError } from '../lib/api'
 
@@ -10,14 +10,14 @@ export function RequestsPage() {
   const [search, setSearch] = useState('')
   const [isCreateOpen, setCreateOpen] = useState(false)
   const [page, setPage] = useState(1)
-  const { data, isPending, isError, error } = useQuery({ queryKey: ['wanted', page], queryFn: () => getWantedProducts(page) })
-  const requests = useMemo(() => (data?.results ?? []).filter((item) => `${item.product_name} ${item.brand}`.toLowerCase().includes(search.toLowerCase())), [data?.results, search])
+  const { data, isPending, isError, error } = useQuery({ queryKey: ['wanted', search, page], queryFn: () => getWantedProducts(search, page) })
+  const requests = data?.results ?? []
   const total = data?.results.reduce((sum, item) => sum + item.wanted_count, 0) ?? 0
   const popular = data?.results.filter((item) => item.wanted_count >= 5).length ?? 0
 
   return (
     <div className="page list-page">
-      <SearchBox placeholder="جستجو در درخواست‌ها..." value={search} onChange={setSearch} />
+      <SearchBox placeholder="جستجو در درخواست‌ها..." value={search} onChange={(value) => { setSearch(value); setPage(1) }} />
       <div className="filters"><FilterButton icon={MessageCircleMore}>تعداد درخواست</FilterButton><FilterButton icon={CalendarDays}>بازه زمانی</FilterButton><FilterButton icon={Box}>محصول</FilterButton></div>
       <button className="primary-button" onClick={() => setCreateOpen(true)}><Plus /> ثبت درخواست جدید</button>
       <div className="summary-card card three-columns">
@@ -48,7 +48,7 @@ export function RequestsPage() {
 
 function CreateWantedModal({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient()
-  const { data: products } = useQuery({ queryKey: ['products', 'wanted-picker'], queryFn: () => getProducts() })
+  const { data: products } = useQuery({ queryKey: ['products', 'wanted-picker'], queryFn: getAllProducts })
   const [form, setForm] = useState({ product: '', product_name: '', brand: '', size: '' })
   const [error, setError] = useState('')
   const mutation = useMutation({
@@ -61,7 +61,7 @@ function CreateWantedModal({ onClose }: { onClose: () => void }) {
   })
   const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }))
   const selectProduct = (value: string) => {
-    const selected = products?.results.find((item) => item.id === Number(value))
+    const selected = products?.find((item) => item.id === Number(value))
     setForm((current) => ({ ...current, product: value, product_name: selected?.name ?? current.product_name }))
   }
   const submit = (event: React.FormEvent) => {
@@ -75,7 +75,7 @@ function CreateWantedModal({ onClose }: { onClose: () => void }) {
       <section className="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="create-wanted-title">
         <header><div><h2 id="create-wanted-title">ثبت درخواست جدید</h2><p>تقاضای مشتری برای کالای ناموجود را ثبت کنید.</p></div><button onClick={onClose} aria-label="بستن"><X /></button></header>
         <form className="modal-form" onSubmit={submit}>
-          <label>محصول موجود در کاتالوگ (اختیاری)<select value={form.product} onChange={(event) => selectProduct(event.target.value)}><option value="">محصول خارج از کاتالوگ</option>{products?.results.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
+          <label>محصول موجود در کاتالوگ (اختیاری)<select value={form.product} onChange={(event) => selectProduct(event.target.value)}><option value="">محصول خارج از کاتالوگ</option>{products?.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
           <label>نام محصول *<input value={form.product_name} onChange={(event) => update('product_name', event.target.value)} placeholder="مثلاً Nike Dunk Low" /></label>
           <div className="form-row"><label>برند<input value={form.brand} onChange={(event) => update('brand', event.target.value)} placeholder="Nike" /></label><label>سایز *<input value={form.size} onChange={(event) => update('size', event.target.value)} placeholder="۴۲" /></label></div>
           {error && <p className="form-alert">{error}</p>}

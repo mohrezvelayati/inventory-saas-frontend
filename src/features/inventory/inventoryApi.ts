@@ -1,8 +1,15 @@
 import { apiRequest } from '../../lib/api'
+import { getAllResults } from '../../lib/pagination'
 import type { InventoryItem, InventoryMovement, InventoryMovementHistory, PaginatedResponse } from '../../types/api'
 
-export function getInventory() {
-  return apiRequest<PaginatedResponse<InventoryItem>>('/inventory/')
+export function getInventory(search = '', page = 1) {
+  const params = new URLSearchParams({ page: String(page) })
+  if (search) params.set('search', search)
+  return apiRequest<PaginatedResponse<InventoryItem>>(`/inventory/?${params}`)
+}
+
+export function getAllInventory() {
+  return getAllResults<InventoryItem>('/inventory/')
 }
 
 export function createInventoryMovement(input: { variant: number; quantity: number; movement_type: 'purchase' | 'adjustment'; note: string }) {

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, CalendarDays, CheckCircle2, LoaderCircle, Plus, ShoppingBag, Store } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState, FilterButton, Pagination, SearchBox, StatusBadge } from '../components/UI'
 import { getSales } from '../features/sales/salesApi'
@@ -17,15 +17,15 @@ export function SalesPage() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
-  const { data, isPending, isError, error } = useQuery({ queryKey: ['sales', status, page], queryFn: () => getSales(status, page) })
-  const sales = useMemo(() => (data?.results ?? []).filter((item) => `${item.id} ${item.customer ?? ''}`.includes(search)), [data?.results, search])
+  const { data, isPending, isError, error } = useQuery({ queryKey: ['sales', status, search, page], queryFn: () => getSales(status, search, page) })
+  const sales = data?.results ?? []
   const completed = data?.results.filter((item) => item.status === 'completed') ?? []
   const drafts = data?.results.filter((item) => item.status === 'draft') ?? []
   const revenue = completed.reduce((sum, item) => sum + Number(item.total_amount), 0)
 
   return (
     <div className="page list-page">
-      <SearchBox placeholder="جستجو با شماره فروش..." value={search} onChange={setSearch} />
+      <SearchBox placeholder="جستجو با شماره فروش یا مشتری..." value={search} onChange={(value) => { setSearch(value); setPage(1) }} />
       <div className="filters"><FilterButton icon={CheckCircle2}>وضعیت</FilterButton><FilterButton icon={CalendarDays}>بازه زمانی</FilterButton><FilterButton icon={Store}>کانال فروش</FilterButton></div>
       <div className="status-tabs">
         {[{ value: '', label: 'همه' }, { value: 'completed', label: 'تکمیل‌شده' }, { value: 'draft', label: 'پیش‌نویس' }, { value: 'cancelled', label: 'لغوشده' }].map((item) => <button key={item.value} className={status === item.value ? 'active' : ''} onClick={() => { setStatus(item.value); setPage(1) }}>{item.label}</button>)}

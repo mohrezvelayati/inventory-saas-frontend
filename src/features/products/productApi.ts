@@ -1,4 +1,5 @@
 import { apiRequest } from '../../lib/api'
+import { getAllResults } from '../../lib/pagination'
 import type { Category, PaginatedResponse, Product, ProductVariant } from '../../types/api'
 
 export function getProducts(search = '', page = 1) {
@@ -31,8 +32,16 @@ export function deleteVariant(id: number) {
   return apiRequest<void>(`/catalog/variants/${id}/`, { method: 'DELETE' })
 }
 
-export function getCategories() {
-  return apiRequest<PaginatedResponse<Category>>('/catalog/categories/')
+export function getCategories(page = 1) {
+  return apiRequest<PaginatedResponse<Category>>(`/catalog/categories/?page=${page}`)
+}
+
+export function getAllCategories() {
+  return getAllResults<Category>('/catalog/categories/')
+}
+
+export function getAllProducts() {
+  return getAllResults<Product>('/catalog/products/')
 }
 
 export function createCategory(name: string) {

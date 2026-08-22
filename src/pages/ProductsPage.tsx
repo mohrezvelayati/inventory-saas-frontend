@@ -3,7 +3,7 @@ import { ArrowLeft, Box, Grid2X2, LoaderCircle, PackageX, Plus, SlidersHorizonta
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState, FilterButton, Pagination, SearchBox, StatusBadge } from '../components/UI'
-import { createProductWithVariant, getCategories, getProducts } from '../features/products/productApi'
+import { createProductWithVariant, getAllCategories, getProducts } from '../features/products/productApi'
 import { ApiError } from '../lib/api'
 import type { Product } from '../types/api'
 
@@ -68,7 +68,7 @@ export function ProductsPage() {
 
 function CreateProductModal({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient()
-  const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: getCategories })
+  const { data: categories } = useQuery({ queryKey: ['categories', 'product-picker'], queryFn: getAllCategories })
   const [form, setForm] = useState({ name: '', description: '', category: '', size: '', purchase_price: '', sale_price: '' })
   const [error, setError] = useState('')
   const mutation = useMutation({
@@ -102,7 +102,7 @@ function CreateProductModal({ onClose }: { onClose: () => void }) {
         <form className="modal-form" onSubmit={submit}>
           <label>نام محصول *<input value={form.name} onChange={(event) => update('name', event.target.value)} placeholder="مثلاً Nike Air Force 1" autoFocus /></label>
           <label>توضیحات<input value={form.description} onChange={(event) => update('description', event.target.value)} placeholder="توضیح کوتاه محصول" /></label>
-          <label>دسته‌بندی<select value={form.category} onChange={(event) => update('category', event.target.value)}><option value="">بدون دسته‌بندی</option>{categories?.results.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
+          <label>دسته‌بندی<select value={form.category} onChange={(event) => update('category', event.target.value)}><option value="">بدون دسته‌بندی</option>{categories?.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
           <div className="form-row"><label>سایز *<input value={form.size} onChange={(event) => update('size', event.target.value)} placeholder="۴۲" /></label><label>قیمت خرید *<input type="number" value={form.purchase_price} onChange={(event) => update('purchase_price', event.target.value)} placeholder="۰" /></label></div>
           <label>قیمت فروش (تومان) *<input type="number" value={form.sale_price} onChange={(event) => update('sale_price', event.target.value)} placeholder="۰" /></label>
           {error && <p className="form-alert">{error}</p>}

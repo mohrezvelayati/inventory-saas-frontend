@@ -1,9 +1,10 @@
 import { apiRequest } from '../../lib/api'
-import type { Customer, PaginatedResponse, Sale, SaleItem } from '../../types/api'
+import type { PaginatedResponse, Sale, SaleItem } from '../../types/api'
 
-export function getSales(status = '', page = 1) {
+export function getSales(status = '', search = '', page = 1) {
   const params = new URLSearchParams({ page: String(page) })
   if (status) params.set('status', status)
+  if (search) params.set('search', search)
   return apiRequest<PaginatedResponse<Sale>>(`/sales/?${params}`)
 }
 
@@ -13,10 +14,6 @@ export function getSale(id: number) {
 
 export function cancelSale(id: number) {
   return apiRequest<{ message: string }>(`/sales/${id}/cancel/`, { method: 'POST' })
-}
-
-export function getCustomers() {
-  return apiRequest<PaginatedResponse<Customer>>('/customers/')
 }
 
 export function createDraftSale(input: { customer: number | null; channel: Sale['channel']; payment_method: Sale['payment_method'] }) {

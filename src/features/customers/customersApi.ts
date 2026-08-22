@@ -1,8 +1,15 @@
 import { apiRequest } from '../../lib/api'
+import { getAllResults } from '../../lib/pagination'
 import type { Customer, PaginatedResponse } from '../../types/api'
 
-export function getCustomers() {
-  return apiRequest<PaginatedResponse<Customer>>('/customers/')
+export function getCustomers(search = '', page = 1) {
+  const params = new URLSearchParams({ page: String(page) })
+  if (search) params.set('search', search)
+  return apiRequest<PaginatedResponse<Customer>>(`/customers/?${params}`)
+}
+
+export function getAllCustomers() {
+  return getAllResults<Customer>('/customers/')
 }
 
 export function createCustomer(input: { full_name: string; phone_number: string }) {

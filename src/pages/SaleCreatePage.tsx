@@ -2,8 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, LoaderCircle, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { getProducts } from '../features/products/productApi'
-import { addSaleItem, completeSale, createDraftSale, deleteDraftSale, getCustomers } from '../features/sales/salesApi'
+import { getAllCustomers } from '../features/customers/customersApi'
+import { getAllProducts } from '../features/products/productApi'
+import { addSaleItem, completeSale, createDraftSale, deleteDraftSale } from '../features/sales/salesApi'
 import type { ProductVariant, Sale } from '../types/api'
 
 type CartItem = { variant: ProductVariant; productName: string; quantity: number; discount: number }
@@ -11,15 +12,15 @@ type CartItem = { variant: ProductVariant; productName: string; quantity: number
 export function SaleCreatePage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { data: products, isPending: productsPending } = useQuery({ queryKey: ['products', 'sale-picker'], queryFn: () => getProducts() })
-  const { data: customers } = useQuery({ queryKey: ['customers'], queryFn: getCustomers, retry: false })
+  const { data: products, isPending: productsPending } = useQuery({ queryKey: ['products', 'sale-picker'], queryFn: getAllProducts })
+  const { data: customers } = useQuery({ queryKey: ['customers', 'sale-picker'], queryFn: getAllCustomers, retry: false })
   const [cart, setCart] = useState<CartItem[]>([])
   const [selection, setSelection] = useState({ product: '', variant: '', quantity: 1 })
   const [customer, setCustomer] = useState('')
   const [channel, setChannel] = useState<Sale['channel']>('store')
   const [payment, setPayment] = useState<Sale['payment_method']>('card')
   const [error, setError] = useState('')
-  const selectedProduct = products?.results.find((product) => product.id === Number(selection.product))
+  const selectedProduct = products?.find((product) => product.id === Number(selection.product))
   const subtotal = useMemo(() => cart.reduce((sum, item) => sum + Number(item.variant.sale_price) * item.quantity - item.discount, 0), [cart])
 
   const addToCart = () => {
@@ -59,7 +60,7 @@ export function SaleCreatePage() {
       <section className="sale-builder card">
         <h3>افزودن کالا</h3>
         {productsPending ? <div className="mini-loading"><LoaderCircle className="spin" /></div> : <>
-          <label>محصول<select value={selection.product} onChange={(event) => setSelection({ product: event.target.value, variant: '', quantity: 1 })}><option value="">انتخاب محصول</option>{products?.results.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
+          <label>محصول<select value={selection.product} onChange={(event) => setSelection({ product: event.target.value, variant: '', quantity: 1 })}><option value="">انتخاب محصول</option>{products?.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
           <div className="form-row"><label>سایز<select value={selection.variant} onChange={(event) => setSelection((current) => ({ ...current, variant: event.target.value }))}><option value="">انتخاب سایز</option>{selectedProduct?.variants.map((variant) => <option key={variant.id} value={variant.id}>{variant.size} — موجودی {variant.current_stock.toLocaleString('fa-IR')}</option>)}</select></label><label>تعداد<input type="number" min="1" value={selection.quantity} onChange={(event) => setSelection((current) => ({ ...current, quantity: Math.max(1, Number(event.target.value)) }))} /></label></div>
           <button className="secondary-button" onClick={addToCart}><Plus /> افزودن به فاکتور</button>
         </>}
@@ -77,7 +78,7 @@ export function SaleCreatePage() {
 
       <section className="sale-details card">
         <h3>اطلاعات فروش</h3>
-        <label>مشتری (اختیاری)<select value={customer} onChange={(event) => setCustomer(event.target.value)}><option value="">بدون مشتری</option>{customers?.results.map((item) => <option key={item.id} value={item.id}>{item.full_name} — {item.phone_number}</option>)}</select></label>
+        <label>مشتری (اختیاری)<select value={customer} onChange={(event) => setCustomer(event.target.value)}><option value="">بدون مشتری</option>{customers?.map((item) => <option key={item.id} value={item.id}>{item.full_name} — {item.phone_number}</option>)}</select></label>
         <div className="form-row"><label>کانال فروش<select value={channel} onChange={(event) => setChannel(event.target.value as Sale['channel'])}><option value="store">حضوری</option><option value="instagram">اینستاگرام</option><option value="website">وب‌سایت</option><option value="referral">معرفی</option><option value="other">سایر</option></select></label><label>روش پرداخت<select value={payment} onChange={(event) => setPayment(event.target.value as Sale['payment_method'])}><option value="card">کارت پوز</option><option value="cash">نقد</option><option value="online">آنلاین</option></select></label></div>
       </section>
       {error && <p className="form-alert">{error}</p>}
