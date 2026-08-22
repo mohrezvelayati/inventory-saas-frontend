@@ -8,6 +8,7 @@ import { MorePage } from './pages/MorePage'
 import { LoginPage, RegisterPage, StoreSetupPage } from './pages/AuthPages'
 import { SaleCreatePage } from './pages/SaleCreatePage'
 import { CategoriesPage, CustomersPage, InventoryPage, MembersPage } from './pages/OperationsPages'
+import { ProductDetailPage, SaleDetailPage } from './pages/DetailPages'
 import { AuthGate, GuestGate, PermissionGate } from './features/auth/AuthGate'
 import './App.css'
 
@@ -20,8 +21,10 @@ function App() {
       <Route element={<AuthGate><AppShell /></AuthGate>}>
         <Route path="/" element={<PermissionGate anyOf={['view_dashboard']}><HomePage /></PermissionGate>} />
         <Route path="/products" element={<PermissionGate anyOf={['manage_catalog']}><ProductsPage /></PermissionGate>} />
+        <Route path="/products/:productId" element={<PermissionGate anyOf={['manage_catalog']}><ProductDetailPage /></PermissionGate>} />
         <Route path="/sales" element={<PermissionGate anyOf={['view_sales', 'create_sale']}><SalesPage /></PermissionGate>} />
         <Route path="/sales/new" element={<PermissionGate anyOf={['create_sale']}><SaleCreatePage /></PermissionGate>} />
+        <Route path="/sales/:saleId" element={<PermissionGate anyOf={['view_sales', 'create_sale']}><SaleDetailPage /></PermissionGate>} />
         <Route path="/requests" element={<PermissionGate anyOf={['manage_wanted']}><RequestsPage /></PermissionGate>} />
         <Route path="/more" element={<MorePage />} />
         <Route path="/customers" element={<PermissionGate anyOf={['manage_customers']}><CustomersPage /></PermissionGate>} />

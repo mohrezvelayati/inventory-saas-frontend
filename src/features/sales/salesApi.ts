@@ -6,6 +6,14 @@ export function getSales(status = '') {
   return apiRequest<PaginatedResponse<Sale>>(`/sales/${query}`)
 }
 
+export function getSale(id: number) {
+  return apiRequest<Sale>(`/sales/${id}/`)
+}
+
+export function cancelSale(id: number) {
+  return apiRequest<{ message: string }>(`/sales/${id}/cancel/`, { method: 'POST' })
+}
+
 export function getCustomers() {
   return apiRequest<PaginatedResponse<Customer>>('/customers/')
 }

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Box, Grid2X2, LoaderCircle, PackageX, Plus, SlidersHorizontal, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { EmptyState, FilterButton, SearchBox, StatusBadge } from '../components/UI'
 import { createProductWithVariant, getCategories, getProducts } from '../features/products/productApi'
 import { ApiError } from '../lib/api'
@@ -49,12 +50,12 @@ export function ProductsPage() {
         {!isPending && !isError && (products.length ? products.map((product) => {
           const status = getProductStatus(product)
           return (
-            <article className="entity-card card" key={product.id}>
+            <Link className="entity-card card entity-link" to={`/products/${product.id}`} key={product.id}>
               <span className="product-visual">👟</span>
               <div className="entity-main"><strong>{product.name}</strong><span>{product.description || 'بدون توضیحات'}</span><b>{formatPrice(product.variants[0]?.sale_price)}</b></div>
               <div className="entity-side"><StatusBadge tone={status.tone}>{status.label}</StatusBadge><span>{product.variants.length} سایز</span></div>
               <ArrowLeft className="chevron" />
-            </article>
+            </Link>
           )
         }) : <EmptyState search={search || 'محصولات'} />)}
       </div>

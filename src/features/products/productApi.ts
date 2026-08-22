@@ -6,6 +6,30 @@ export function getProducts(search = '') {
   return apiRequest<PaginatedResponse<Product>>(`/catalog/products/${query}`)
 }
 
+export function getProduct(id: number) {
+  return apiRequest<Product>(`/catalog/products/${id}/`)
+}
+
+export function updateProduct(id: number, input: { name: string; description: string; categories: number[] }) {
+  return apiRequest<Product>(`/catalog/products/${id}/`, { method: 'PATCH', body: JSON.stringify(input) })
+}
+
+export function deleteProduct(id: number) {
+  return apiRequest<void>(`/catalog/products/${id}/`, { method: 'DELETE' })
+}
+
+export function createVariant(productId: number, input: { size: string; purchase_price: string; sale_price: string }) {
+  return apiRequest<ProductVariant>(`/catalog/product/${productId}/variants/`, { method: 'POST', body: JSON.stringify(input) })
+}
+
+export function updateVariant(id: number, input: { size?: string; purchase_price?: string; sale_price?: string }) {
+  return apiRequest<ProductVariant>(`/catalog/variants/${id}/`, { method: 'PATCH', body: JSON.stringify(input) })
+}
+
+export function deleteVariant(id: number) {
+  return apiRequest<void>(`/catalog/variants/${id}/`, { method: 'DELETE' })
+}
+
 export function getCategories() {
   return apiRequest<PaginatedResponse<Category>>('/catalog/categories/')
 }

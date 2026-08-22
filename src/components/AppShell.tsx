@@ -52,7 +52,7 @@ export function AppShell() {
             <Menu size={24} />
           </button>
         )}
-        {!isHome && <h1>{titles[pathname] ?? 'فروشگاه'}</h1>}
+        {!isHome && <h1>{titles[pathname] ?? (pathname.startsWith('/products/') ? 'جزئیات محصول' : pathname.startsWith('/sales/') ? 'جزئیات فروش' : 'فروشگاه')}</h1>}
         <button className="notification-button" aria-label="اعلان‌ها">
           <Bell size={25} />
           <span>3</span>
