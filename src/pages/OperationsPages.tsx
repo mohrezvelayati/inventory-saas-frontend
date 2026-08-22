@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowDownUp, ArrowRight, Boxes, FolderPlus, History, LoaderCircle, PackagePlus, Plus, Search, Settings2, Trash2, UserPlus, UsersRound, X } from 'lucide-react'
+import { ArrowDownUp, ArrowRight, Boxes, FolderPlus, History, LoaderCircle, PackagePlus, Pencil, Plus, Search, Settings2, Trash2, UserPlus, UsersRound, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Pagination, SearchBox, StatusBadge } from '../components/UI'
-import { createCustomer, deleteCustomer, getCustomers } from '../features/customers/customersApi'
+import { createCustomer, deleteCustomer, getCustomers, updateCustomer } from '../features/customers/customersApi'
 import { createInventoryMovement, getAllInventory, getInventory, getInventoryHistory } from '../features/inventory/inventoryApi'
 import { createCategory, deleteCategory, getCategories } from '../features/products/productApi'
 import { deleteMember, getMemberPermissions, getMembers, getPermissionCatalog, grantMemberPermission, inviteMember, revokeMemberPermission, updateMemberRole } from '../features/stores/membersApi'
-import type { StoreMember } from '../types/api'
+import type { Customer, StoreMember } from '../types/api'
 
 function PageHeading({ title, subtitle }: { title: string; subtitle: string }) {
   return <div className="subpage-heading"><Link to="/more" aria-label="بازگشت"><ArrowRight /></Link><div><h2>{title}</h2><p>{subtitle}</p></div></div>
@@ -22,6 +22,7 @@ export function CustomersPage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [open, setOpen] = useState(false)
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
   const [form, setForm] = useState({ full_name: '', phone_number: '' })
   const [error, setError] = useState('')
   const { data, isPending } = useQuery({ queryKey: ['customers', search, page], queryFn: () => getCustomers(search, page) })
@@ -34,10 +35,19 @@ export function CustomersPage() {
     <SearchBox placeholder="جستجو با نام یا شماره تلفن..." value={search} onChange={(value) => { setSearch(value); setPage(1) }} />
     <button className="primary-button" onClick={() => setOpen(true)}><UserPlus /> افزودن مشتری</button>
     <div className="operation-summary card"><UsersRound /><div><strong>{data?.count ?? '—'}</strong><span>مشتری ثبت‌شده</span></div></div>
-    <div className="simple-list">{isPending ? <div className="loading-state"><LoaderCircle className="spin" /></div> : customers.map((customer) => <article className="simple-row card" key={customer.id}><span className="initial-avatar">{customer.full_name.charAt(0)}</span><div><strong>{customer.full_name}</strong><small>{customer.phone_number}</small></div><button className="row-delete" onClick={() => window.confirm('این مشتری حذف شود؟') && deleteMutation.mutate(customer.id)}><Trash2 /></button></article>)}</div>
+    <div className="simple-list">{isPending ? <div className="loading-state"><LoaderCircle className="spin" /></div> : customers.map((customer) => <article className="simple-row card" key={customer.id}><span className="initial-avatar">{customer.full_name.charAt(0)}</span><div><strong>{customer.full_name}</strong><small>{customer.phone_number}</small></div><div className="row-actions"><button className="row-edit" onClick={() => setEditingCustomer(customer)} aria-label="ویرایش مشتری"><Pencil /></button><button className="row-delete" onClick={() => window.confirm('این مشتری حذف شود؟') && deleteMutation.mutate(customer.id)} aria-label="حذف مشتری"><Trash2 /></button></div></article>)}</div>
     <Pagination page={page} count={data?.count ?? 0} onChange={setPage} />
     {open && <Modal title="مشتری جدید" subtitle="نام و شماره تماس مشتری را ثبت کنید." onClose={() => setOpen(false)}><form className="modal-form" onSubmit={(event) => { event.preventDefault(); setError(''); if (!form.full_name || !form.phone_number) { setError('هر دو فیلد ضروری هستند.'); return } createMutation.mutate(form) }}><label>نام و نام خانوادگی *<input value={form.full_name} onChange={(event) => setForm({ ...form, full_name: event.target.value })} autoFocus /></label><label>شماره تلفن *<input value={form.phone_number} onChange={(event) => setForm({ ...form, phone_number: event.target.value })} inputMode="tel" /></label>{error && <p className="form-alert">{error}</p>}<button className="primary-button" disabled={createMutation.isPending}>{createMutation.isPending ? <LoaderCircle className="spin" /> : <UserPlus />} ثبت مشتری</button></form></Modal>}
+    {editingCustomer && <CustomerEditModal customer={editingCustomer} onClose={() => setEditingCustomer(null)} />}
   </div>
+}
+
+function CustomerEditModal({ customer, onClose }: { customer: Customer; onClose: () => void }) {
+  const queryClient = useQueryClient()
+  const [form, setForm] = useState({ full_name: customer.full_name, phone_number: customer.phone_number })
+  const [error, setError] = useState('')
+  const mutation = useMutation({ mutationFn: (input: typeof form) => updateCustomer(customer.id, input), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ['customers'] }); onClose() }, onError: (mutationError) => setError((mutationError as Error).message) })
+  return <Modal title="ویرایش مشتری" subtitle="نام و شماره تماس مشتری را اصلاح کنید." onClose={onClose}><form className="modal-form" onSubmit={(event) => { event.preventDefault(); setError(''); if (!form.full_name.trim() || !form.phone_number.trim()) { setError('هر دو فیلد ضروری هستند.'); return } mutation.mutate(form) }}><label>نام و نام خانوادگی *<input value={form.full_name} onChange={(event) => setForm({ ...form, full_name: event.target.value })} autoFocus /></label><label>شماره تلفن *<input value={form.phone_number} onChange={(event) => setForm({ ...form, phone_number: event.target.value })} inputMode="tel" /></label>{error && <p className="form-alert">{error}</p>}<button className="primary-button" disabled={mutation.isPending}>{mutation.isPending ? <LoaderCircle className="spin" /> : <Pencil />} ذخیره تغییرات</button></form></Modal>
 }
 
 export function InventoryPage() {

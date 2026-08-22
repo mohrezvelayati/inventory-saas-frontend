@@ -30,6 +30,8 @@ const titles: Record<string, string> = {
   '/inventory/history': 'تاریخچه موجودی',
   '/categories': 'دسته‌بندی‌ها',
   '/members': 'کاربران و نقش‌ها',
+  '/profile': 'پروفایل کاربری',
+  '/settings/store': 'تنظیمات فروشگاه',
 }
 
 export function AppShell() {

@@ -28,6 +28,13 @@ export function getCurrentUser() {
   return apiRequest<CurrentUser>('/users/me/')
 }
 
+export function updateCurrentUser(input: { username: string; full_name: string; phone_number: string }) {
+  return apiRequest<CurrentUser>('/users/me/', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  })
+}
+
 export function createStore(name: string) {
   return apiRequest<Store>('/stores/', {
     method: 'POST',

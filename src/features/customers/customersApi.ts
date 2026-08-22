@@ -16,6 +16,10 @@ export function createCustomer(input: { full_name: string; phone_number: string 
   return apiRequest<Customer>('/customers/', { method: 'POST', body: JSON.stringify(input) })
 }
 
+export function updateCustomer(id: number, input: { full_name: string; phone_number: string }) {
+  return apiRequest<Customer>(`/customers/${id}/`, { method: 'PATCH', body: JSON.stringify(input) })
+}
+
 export function deleteCustomer(id: number) {
   return apiRequest<void>(`/customers/${id}/`, { method: 'DELETE' })
 }

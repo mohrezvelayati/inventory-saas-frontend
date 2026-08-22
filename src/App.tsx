@@ -9,7 +9,8 @@ import { LoginPage, RegisterPage, StoreSetupPage } from './pages/AuthPages'
 import { SaleCreatePage } from './pages/SaleCreatePage'
 import { CategoriesPage, CustomersPage, InventoryHistoryPage, InventoryPage, MembersPage } from './pages/OperationsPages'
 import { ProductDetailPage, SaleDetailPage } from './pages/DetailPages'
-import { AuthGate, GuestGate, PermissionGate } from './features/auth/AuthGate'
+import { ProfileSettingsPage, StoreSettingsPage } from './pages/SettingsPages'
+import { AuthGate, GuestGate, ManagerGate, PermissionGate } from './features/auth/AuthGate'
 import './App.css'
 
 function App() {
@@ -32,6 +33,8 @@ function App() {
         <Route path="/inventory/history" element={<PermissionGate anyOf={['view_inventory']}><InventoryHistoryPage /></PermissionGate>} />
         <Route path="/categories" element={<PermissionGate anyOf={['manage_catalog']}><CategoriesPage /></PermissionGate>} />
         <Route path="/members" element={<PermissionGate anyOf={['manage_members']}><MembersPage /></PermissionGate>} />
+        <Route path="/profile" element={<ProfileSettingsPage />} />
+        <Route path="/settings/store" element={<ManagerGate><StoreSettingsPage /></ManagerGate>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

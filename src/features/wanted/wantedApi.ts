@@ -33,3 +33,14 @@ export function createWantedProduct(input: CreateWantedInput) {
     body: JSON.stringify(input),
   })
 }
+
+export function updateWantedProduct(id: number, input: CreateWantedInput) {
+  return apiRequest<WantedProduct>(`/wanted/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  })
+}
+
+export function deleteWantedProduct(id: number) {
+  return apiRequest<void>(`/wanted/${id}/`, { method: 'DELETE' })
+}

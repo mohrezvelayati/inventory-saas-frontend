@@ -1,12 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Box, CalendarDays, Clock3, LoaderCircle, MessageCircleMore, Plus, RotateCcw, TrendingUp, X } from 'lucide-react'
+import { ArrowLeft, Box, CalendarDays, Clock3, LoaderCircle, MessageCircleMore, Pencil, Plus, RotateCcw, Trash2, TrendingUp, X } from 'lucide-react'
 import { useState } from 'react'
 import { EmptyState, FilterButton, Pagination, SearchBox, StatusBadge } from '../components/UI'
 import { getAllProducts } from '../features/products/productApi'
-import { createWantedProduct, getWantedProducts } from '../features/wanted/wantedApi'
+import { createWantedProduct, deleteWantedProduct, getWantedProducts, updateWantedProduct } from '../features/wanted/wantedApi'
 import { ApiError } from '../lib/api'
+import type { WantedProduct } from '../types/api'
 
 export function RequestsPage() {
+  const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [minCount, setMinCount] = useState('')
@@ -14,12 +16,14 @@ export function RequestsPage() {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [isCreateOpen, setCreateOpen] = useState(false)
+  const [editingRequest, setEditingRequest] = useState<WantedProduct | null>(null)
   const [page, setPage] = useState(1)
   const { data: products } = useQuery({ queryKey: ['products', 'wanted-picker'], queryFn: getAllProducts })
   const { data, isPending, isError, error } = useQuery({ queryKey: ['wanted', search, page, minCount, productId, dateFrom, dateTo], queryFn: () => getWantedProducts({ search, page, minCount, productId, dateFrom, dateTo }) })
   const requests = data?.results ?? []
   const total = data?.results.reduce((sum, item) => sum + item.wanted_count, 0) ?? 0
   const popular = data?.results.filter((item) => item.wanted_count >= 5).length ?? 0
+  const deleteMutation = useMutation({ mutationFn: deleteWantedProduct, onSuccess: async () => { await Promise.all([queryClient.invalidateQueries({ queryKey: ['wanted'] }), queryClient.invalidateQueries({ queryKey: ['dashboard'] })]) } })
 
   return (
     <div className="page list-page">
@@ -41,7 +45,7 @@ export function RequestsPage() {
             <article className={`entity-card request-card card ${isPopular ? 'featured' : ''}`} key={request.id}>
               <span className="product-visual">👟</span>
               <div className="entity-main"><strong>{request.product_name_display || request.product_name}</strong><span>{request.brand || 'بدون برند'} · سایز {request.size}</span><small>{new Date(request.created_at).toLocaleDateString('fa-IR')}</small></div>
-              <div className="entity-side"><StatusBadge tone={isPopular ? 'purple' : 'info'}>{isPopular ? 'محبوب' : 'ثبت‌شده'}</StatusBadge><b>{request.wanted_count.toLocaleString('fa-IR')} درخواست</b></div>
+              <div className="entity-side"><StatusBadge tone={isPopular ? 'purple' : 'info'}>{isPopular ? 'محبوب' : 'ثبت‌شده'}</StatusBadge><b>{request.wanted_count.toLocaleString('fa-IR')} درخواست</b><div className="request-actions"><button className="row-edit" onClick={() => setEditingRequest(request)} aria-label="ویرایش درخواست"><Pencil /></button><button className="row-delete" onClick={() => window.confirm('این درخواست کالا حذف شود؟') && deleteMutation.mutate(request.id)} aria-label="حذف درخواست"><Trash2 /></button></div></div>
               <ArrowLeft className="chevron" />
             </article>
           )
@@ -49,8 +53,24 @@ export function RequestsPage() {
       </div>
       <Pagination page={page} count={data?.count ?? 0} onChange={setPage} />
       {isCreateOpen && <CreateWantedModal onClose={() => setCreateOpen(false)} />}
+      {editingRequest && <EditWantedModal request={editingRequest} onClose={() => setEditingRequest(null)} />}
     </div>
   )
+}
+
+function EditWantedModal({ request, onClose }: { request: WantedProduct; onClose: () => void }) {
+  const queryClient = useQueryClient()
+  const { data: products } = useQuery({ queryKey: ['products', 'wanted-picker'], queryFn: getAllProducts })
+  const [form, setForm] = useState({ product: request.product?.toString() ?? '', product_name: request.product_name, brand: request.brand, size: request.size })
+  const [error, setError] = useState('')
+  const mutation = useMutation({
+    mutationFn: () => updateWantedProduct(request.id, { product: form.product ? Number(form.product) : null, product_name: form.product_name, brand: form.brand, size: form.size }),
+    onSuccess: async () => { await Promise.all([queryClient.invalidateQueries({ queryKey: ['wanted'] }), queryClient.invalidateQueries({ queryKey: ['dashboard'] })]); onClose() },
+    onError: (mutationError) => setError((mutationError as Error).message),
+  })
+  const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }))
+  const selectProduct = (value: string) => { const selected = products?.find((item) => item.id === Number(value)); setForm((current) => ({ ...current, product: value, product_name: selected?.name ?? current.product_name })) }
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><section className="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="edit-wanted-title"><header><div><h2 id="edit-wanted-title">ویرایش درخواست</h2><p>اطلاعات کالای درخواستی را اصلاح کنید.</p></div><button onClick={onClose} aria-label="بستن"><X /></button></header><form className="modal-form" onSubmit={(event) => { event.preventDefault(); setError(''); if (!form.product_name.trim() || !form.size.trim()) { setError('نام محصول و سایز ضروری هستند.'); return } mutation.mutate() }}><label>محصول موجود در کاتالوگ (اختیاری)<select value={form.product} onChange={(event) => selectProduct(event.target.value)}><option value="">محصول خارج از کاتالوگ</option>{products?.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label><label>نام محصول *<input value={form.product_name} onChange={(event) => update('product_name', event.target.value)} /></label><div className="form-row"><label>برند<input value={form.brand} onChange={(event) => update('brand', event.target.value)} /></label><label>سایز *<input value={form.size} onChange={(event) => update('size', event.target.value)} /></label></div>{error && <p className="form-alert">{error}</p>}<button className="primary-button" disabled={mutation.isPending}>{mutation.isPending ? <LoaderCircle className="spin" /> : <Pencil />} ذخیره تغییرات</button></form></section></div>
 }
 
 function CreateWantedModal({ onClose }: { onClose: () => void }) {

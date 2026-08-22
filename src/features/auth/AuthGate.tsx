@@ -30,3 +30,9 @@ export function PermissionGate({ children, anyOf }: { children: ReactNode; anyOf
   if (!allowed) return <div className="forbidden-state"><span>۴۰۳</span><strong>به این بخش دسترسی ندارید</strong><p>مدیر فروشگاه می‌تواند دسترسی لازم را برای حساب شما فعال کند.</p></div>
   return children
 }
+
+export function ManagerGate({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  if (user?.membership?.role !== 'manager') return <div className="forbidden-state"><span>۴۰۳</span><strong>این بخش مخصوص مدیر فروشگاه است</strong><p>تنها مدیر اصلی می‌تواند تنظیمات فروشگاه را تغییر دهد.</p></div>
+  return children
+}
