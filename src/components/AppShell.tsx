@@ -32,6 +32,7 @@ const titles: Record<string, string> = {
   '/members': 'کاربران و نقش‌ها',
   '/profile': 'پروفایل کاربری',
   '/settings/store': 'تنظیمات فروشگاه',
+  '/reports': 'گزارش‌ها',
 }
 
 export function AppShell() {

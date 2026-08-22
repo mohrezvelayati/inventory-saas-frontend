@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 
 const menuItems = [
   { title: 'مشتریان', subtitle: 'مدیریت لیست مشتریان و سوابق خرید', icon: UsersRound, tone: 'green', to: '/customers' },
-  { title: 'گزارش‌ها', subtitle: 'مشاهده آمار فروش، موجودی و روندها', icon: BarChart3, tone: 'purple', to: '/' },
+  { title: 'گزارش‌ها', subtitle: 'مشاهده آمار فروش، موجودی و روندها', icon: BarChart3, tone: 'purple', to: '/reports' },
   { title: 'موجودی', subtitle: 'ثبت ورود و اصلاح موجودی', icon: Boxes, tone: 'purple', to: '/inventory' },
   { title: 'دسته‌بندی‌ها', subtitle: 'مدیریت دسته‌بندی محصولات', icon: Grid2X2, tone: 'purple', to: '/categories' },
   { title: 'کاربران و نقش‌ها', subtitle: 'مدیریت کارکنان و دسترسی‌ها', icon: ShieldCheck, tone: 'blue', to: '/members' },
@@ -22,7 +22,7 @@ export function MorePage() {
         <span className="store-illustration small">🏪</span>
       </section>
       <h3 className="section-title">دسترسی‌های سریع</h3>
-      <div className="more-shortcuts card"><Link to="/customers"><UsersRound />مشتریان</Link><Link to="/"><BarChart3 />گزارش‌ها</Link><Link to="/inventory"><Boxes />موجودی</Link></div>
+      <div className="more-shortcuts card"><Link to="/customers"><UsersRound />مشتریان</Link><Link to="/reports"><BarChart3 />گزارش‌ها</Link><Link to="/inventory"><Boxes />موجودی</Link></div>
       <div className="settings-list card">
         {menuItems.filter((item) => item.to !== '/settings/store' || user?.membership?.role === 'manager').map(({ title, subtitle, icon: Icon, tone, to }) => (
           <Link key={title} to={to}><span className={`activity-icon ${tone}`}><Icon /></span><span><strong>{title}</strong><small>{subtitle}</small></span><ArrowLeft /></Link>

@@ -10,6 +10,7 @@ import { SaleCreatePage } from './pages/SaleCreatePage'
 import { CategoriesPage, CustomersPage, InventoryHistoryPage, InventoryPage, MembersPage } from './pages/OperationsPages'
 import { ProductDetailPage, SaleDetailPage } from './pages/DetailPages'
 import { ProfileSettingsPage, StoreSettingsPage } from './pages/SettingsPages'
+import { ReportsPage } from './pages/ReportsPage'
 import { AuthGate, GuestGate, ManagerGate, PermissionGate } from './features/auth/AuthGate'
 import './App.css'
 
@@ -35,6 +36,7 @@ function App() {
         <Route path="/members" element={<PermissionGate anyOf={['manage_members']}><MembersPage /></PermissionGate>} />
         <Route path="/profile" element={<ProfileSettingsPage />} />
         <Route path="/settings/store" element={<ManagerGate><StoreSettingsPage /></ManagerGate>} />
+        <Route path="/reports" element={<PermissionGate anyOf={['view_dashboard']}><ReportsPage /></PermissionGate>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

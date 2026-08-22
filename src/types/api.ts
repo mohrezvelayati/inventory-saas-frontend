@@ -103,6 +103,29 @@ export type Dashboard = {
   wanted: { product_name: string; size: string; wanted_count: number }[]
 }
 
+export type ReportData = {
+  period: { date_from: string; date_to: string }
+  sales: {
+    orders_count: number
+    revenue: string
+    discount: string
+    cost: string
+    gross_profit: string
+    average_order: string
+  }
+  daily: { date: string; orders_count: number; revenue: string }[]
+  channels: { channel: Sale['channel']; orders_count: number; revenue: string }[]
+  products: { product_name: string; sold_count: number; revenue: string }[]
+  inventory: {
+    total_variants: number
+    total_stock: number
+    low_stock_count: number
+    out_of_stock_count: number
+    purchase_value: string
+    retail_value: string
+  }
+}
+
 export type Customer = {
   id: number
   full_name: string
