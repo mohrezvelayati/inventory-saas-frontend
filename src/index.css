@@ -1,0 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap');
+
+:root {
+  font-family: 'Vazirmatn', Tahoma, Arial, sans-serif;
+  color: #17152d;
+  background: #f5f6fa;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --primary: #6325ec;
+  --primary-dark: #4d16db;
+  --primary-soft: #f1ebff;
+  --text: #17152d;
+  --muted: #79788c;
+  --line: #ecebf3;
+  --green: #0dbb63;
+  --orange: #ff9800;
+  --red: #ef4444;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+button, input { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button { cursor: pointer; }
+a { color: inherit; }
+#root { min-height: 100vh; }
+
+@media (min-width: 680px) {
+  body { padding: 24px 0; background: radial-gradient(circle at top, #fff 0, #f4f5fa 55%, #eceef5 100%); }
+}

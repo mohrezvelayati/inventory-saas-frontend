@@ -1,0 +1,111 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ArrowLeft, Box, Grid2X2, LoaderCircle, PackageX, Plus, SlidersHorizontal, X } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { EmptyState, FilterButton, SearchBox, StatusBadge } from '../components/UI'
+import { createProductWithVariant, getCategories, getProducts } from '../features/products/productApi'
+import { ApiError } from '../lib/api'
+import type { Product } from '../types/api'
+
+function formatPrice(value?: string) {
+  if (!value) return 'بدون قیمت'
+  return `${Number(value).toLocaleString('fa-IR')} تومان`
+}
+
+function getProductStatus(product: Product) {
+  const stock = product.variants.reduce((sum, variant) => sum + variant.current_stock, 0)
+  if (stock === 0) return { label: 'ناموجود', tone: 'danger' }
+  if (stock <= 2) return { label: 'کم‌موجود', tone: 'warning' }
+  return { label: 'موجود', tone: 'success' }
+}
+
+export function ProductsPage() {
+  const [search, setSearch] = useState('')
+  const [isCreateOpen, setCreateOpen] = useState(false)
+  const { data, isPending, isError, error } = useQuery({
+    queryKey: ['products', search],
+    queryFn: () => getProducts(search),
+  })
+  const products = useMemo(() => data?.results ?? [], [data?.results])
+  const totals = useMemo(() => products.reduce((result, product) => {
+    const stock = product.variants.reduce((sum, variant) => sum + variant.current_stock, 0)
+    if (stock === 0) result.out += 1
+    else if (stock <= 2) result.low += 1
+    return result
+  }, { low: 0, out: 0 }), [products])
+
+  return (
+    <div className="page list-page">
+      <SearchBox placeholder="جستجو در محصولات..." value={search} onChange={setSearch} />
+      <div className="filters"><FilterButton icon={Grid2X2}>دسته‌بندی</FilterButton><FilterButton icon={SlidersHorizontal}>وضعیت موجودی</FilterButton><FilterButton icon={SlidersHorizontal}>مرتب‌سازی</FilterButton></div>
+      <button className="primary-button" onClick={() => setCreateOpen(true)}><Plus /> افزودن محصول جدید</button>
+      <div className="summary-card card three-columns">
+        <div><Box /><strong>{data?.count ?? '—'}</strong><span>کل محصولات</span></div>
+        <div><SlidersHorizontal className="orange" /><strong>{totals.low}</strong><span>کم‌موجود این صفحه</span></div>
+        <div><PackageX className="red" /><strong>{totals.out}</strong><span>ناموجود این صفحه</span></div>
+      </div>
+      <div className="entity-list">
+        {isPending && <div className="loading-state"><LoaderCircle className="spin" /><span>در حال دریافت محصولات...</span></div>}
+        {isError && <div className="error-state"><PackageX /><strong>دریافت محصولات ناموفق بود</strong><span>{(error as Error).message}</span></div>}
+        {!isPending && !isError && (products.length ? products.map((product) => {
+          const status = getProductStatus(product)
+          return (
+            <article className="entity-card card" key={product.id}>
+              <span className="product-visual">👟</span>
+              <div className="entity-main"><strong>{product.name}</strong><span>{product.description || 'بدون توضیحات'}</span><b>{formatPrice(product.variants[0]?.sale_price)}</b></div>
+              <div className="entity-side"><StatusBadge tone={status.tone}>{status.label}</StatusBadge><span>{product.variants.length} سایز</span></div>
+              <ArrowLeft className="chevron" />
+            </article>
+          )
+        }) : <EmptyState search={search || 'محصولات'} />)}
+      </div>
+      {isCreateOpen && <CreateProductModal onClose={() => setCreateOpen(false)} />}
+    </div>
+  )
+}
+
+function CreateProductModal({ onClose }: { onClose: () => void }) {
+  const queryClient = useQueryClient()
+  const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: getCategories })
+  const [form, setForm] = useState({ name: '', description: '', category: '', size: '', purchase_price: '', sale_price: '' })
+  const [error, setError] = useState('')
+  const mutation = useMutation({
+    mutationFn: createProductWithVariant,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['products'] })
+      onClose()
+    },
+    onError: (mutationError) => setError(mutationError instanceof ApiError ? mutationError.message : 'ثبت محصول ناموفق بود.'),
+  })
+
+  const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }))
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault()
+    setError('')
+    if (!form.name || !form.size || !form.purchase_price || !form.sale_price) { setError('فیلدهای ضروری را کامل کنید.'); return }
+    mutation.mutate({
+      name: form.name,
+      description: form.description,
+      categories: form.category ? [Number(form.category)] : [],
+      size: form.size,
+      purchase_price: form.purchase_price,
+      sale_price: form.sale_price,
+    })
+  }
+
+  return (
+    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <section className="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="create-product-title">
+        <header><div><h2 id="create-product-title">افزودن محصول</h2><p>اطلاعات محصول و اولین سایز آن را وارد کنید.</p></div><button onClick={onClose} aria-label="بستن"><X /></button></header>
+        <form className="modal-form" onSubmit={submit}>
+          <label>نام محصول *<input value={form.name} onChange={(event) => update('name', event.target.value)} placeholder="مثلاً Nike Air Force 1" autoFocus /></label>
+          <label>توضیحات<input value={form.description} onChange={(event) => update('description', event.target.value)} placeholder="توضیح کوتاه محصول" /></label>
+          <label>دسته‌بندی<select value={form.category} onChange={(event) => update('category', event.target.value)}><option value="">بدون دسته‌بندی</option>{categories?.results.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
+          <div className="form-row"><label>سایز *<input value={form.size} onChange={(event) => update('size', event.target.value)} placeholder="۴۲" /></label><label>قیمت خرید *<input type="number" value={form.purchase_price} onChange={(event) => update('purchase_price', event.target.value)} placeholder="۰" /></label></div>
+          <label>قیمت فروش (تومان) *<input type="number" value={form.sale_price} onChange={(event) => update('sale_price', event.target.value)} placeholder="۰" /></label>
+          {error && <p className="form-alert">{error}</p>}
+          <button className="primary-button" disabled={mutation.isPending}>{mutation.isPending ? <LoaderCircle className="spin" /> : <Plus />} ثبت محصول</button>
+        </form>
+      </section>
+    </div>
+  )
+}
