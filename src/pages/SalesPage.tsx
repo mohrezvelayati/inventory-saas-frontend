@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, CalendarDays, CheckCircle2, LoaderCircle, Plus, ShoppingBag, Store } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { EmptyState, FilterButton, SearchBox, StatusBadge } from '../components/UI'
+import { EmptyState, FilterButton, Pagination, SearchBox, StatusBadge } from '../components/UI'
 import { getSales } from '../features/sales/salesApi'
 import type { Sale } from '../types/api'
 
@@ -16,7 +16,8 @@ const channelLabels: Record<Sale['channel'], string> = { store: 'حضوری', in
 export function SalesPage() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
-  const { data, isPending, isError, error } = useQuery({ queryKey: ['sales', status], queryFn: () => getSales(status) })
+  const [page, setPage] = useState(1)
+  const { data, isPending, isError, error } = useQuery({ queryKey: ['sales', status, page], queryFn: () => getSales(status, page) })
   const sales = useMemo(() => (data?.results ?? []).filter((item) => `${item.id} ${item.customer ?? ''}`.includes(search)), [data?.results, search])
   const completed = data?.results.filter((item) => item.status === 'completed') ?? []
   const drafts = data?.results.filter((item) => item.status === 'draft') ?? []
@@ -27,7 +28,7 @@ export function SalesPage() {
       <SearchBox placeholder="جستجو با شماره فروش..." value={search} onChange={setSearch} />
       <div className="filters"><FilterButton icon={CheckCircle2}>وضعیت</FilterButton><FilterButton icon={CalendarDays}>بازه زمانی</FilterButton><FilterButton icon={Store}>کانال فروش</FilterButton></div>
       <div className="status-tabs">
-        {[{ value: '', label: 'همه' }, { value: 'completed', label: 'تکمیل‌شده' }, { value: 'draft', label: 'پیش‌نویس' }, { value: 'cancelled', label: 'لغوشده' }].map((item) => <button key={item.value} className={status === item.value ? 'active' : ''} onClick={() => setStatus(item.value)}>{item.label}</button>)}
+        {[{ value: '', label: 'همه' }, { value: 'completed', label: 'تکمیل‌شده' }, { value: 'draft', label: 'پیش‌نویس' }, { value: 'cancelled', label: 'لغوشده' }].map((item) => <button key={item.value} className={status === item.value ? 'active' : ''} onClick={() => { setStatus(item.value); setPage(1) }}>{item.label}</button>)}
       </div>
       <Link className="primary-button primary-link" to="/sales/new"><Plus /> ثبت فروش جدید</Link>
       <div className="summary-card card three-columns">
@@ -50,6 +51,7 @@ export function SalesPage() {
           )
         }) : <EmptyState search={search || 'فروش‌ها'} />)}
       </div>
+      <Pagination page={page} count={data?.count ?? 0} onChange={setPage} />
       <Link className="floating-button" aria-label="ثبت فروش" to="/sales/new"><Plus /></Link>
     </div>
   )

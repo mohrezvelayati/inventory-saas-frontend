@@ -127,6 +127,14 @@ export type InventoryMovement = {
   created_at: string
 }
 
+export type InventoryMovementHistory = InventoryMovement & {
+  product_id: number
+  product_name: string
+  variant_size: string
+  created_by: number | null
+  created_by_username: string | null
+}
+
 export type StoreMember = {
   id: number
   store: number
@@ -136,4 +144,18 @@ export type StoreMember = {
   role: 'manager' | 'seller' | 'admin'
   created_at: string
   updated_at: string
+}
+
+export type StorePermission = {
+  id: number
+  code: PermissionCode
+  name: string
+}
+
+export type MemberPermission = {
+  id: number
+  permission: number
+  permission_code: PermissionCode
+  permission_name: string
+  created_at: string
 }

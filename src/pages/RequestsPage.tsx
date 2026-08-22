@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Box, CalendarDays, Clock3, LoaderCircle, MessageCircleMore, Plus, TrendingUp, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { EmptyState, FilterButton, SearchBox, StatusBadge } from '../components/UI'
+import { EmptyState, FilterButton, Pagination, SearchBox, StatusBadge } from '../components/UI'
 import { getProducts } from '../features/products/productApi'
 import { createWantedProduct, getWantedProducts } from '../features/wanted/wantedApi'
 import { ApiError } from '../lib/api'
@@ -9,7 +9,8 @@ import { ApiError } from '../lib/api'
 export function RequestsPage() {
   const [search, setSearch] = useState('')
   const [isCreateOpen, setCreateOpen] = useState(false)
-  const { data, isPending, isError, error } = useQuery({ queryKey: ['wanted'], queryFn: getWantedProducts })
+  const [page, setPage] = useState(1)
+  const { data, isPending, isError, error } = useQuery({ queryKey: ['wanted', page], queryFn: () => getWantedProducts(page) })
   const requests = useMemo(() => (data?.results ?? []).filter((item) => `${item.product_name} ${item.brand}`.toLowerCase().includes(search.toLowerCase())), [data?.results, search])
   const total = data?.results.reduce((sum, item) => sum + item.wanted_count, 0) ?? 0
   const popular = data?.results.filter((item) => item.wanted_count >= 5).length ?? 0
@@ -39,6 +40,7 @@ export function RequestsPage() {
           )
         }) : <EmptyState search={search || 'درخواست‌ها'} />)}
       </div>
+      <Pagination page={page} count={data?.count ?? 0} onChange={setPage} />
       {isCreateOpen && <CreateWantedModal onClose={() => setCreateOpen(false)} />}
     </div>
   )

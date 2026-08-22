@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Box, Grid2X2, LoaderCircle, PackageX, Plus, SlidersHorizontal, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { EmptyState, FilterButton, SearchBox, StatusBadge } from '../components/UI'
+import { EmptyState, FilterButton, Pagination, SearchBox, StatusBadge } from '../components/UI'
 import { createProductWithVariant, getCategories, getProducts } from '../features/products/productApi'
 import { ApiError } from '../lib/api'
 import type { Product } from '../types/api'
@@ -21,10 +21,11 @@ function getProductStatus(product: Product) {
 
 export function ProductsPage() {
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
   const [isCreateOpen, setCreateOpen] = useState(false)
   const { data, isPending, isError, error } = useQuery({
-    queryKey: ['products', search],
-    queryFn: () => getProducts(search),
+    queryKey: ['products', search, page],
+    queryFn: () => getProducts(search, page),
   })
   const products = useMemo(() => data?.results ?? [], [data?.results])
   const totals = useMemo(() => products.reduce((result, product) => {
@@ -36,7 +37,7 @@ export function ProductsPage() {
 
   return (
     <div className="page list-page">
-      <SearchBox placeholder="جستجو در محصولات..." value={search} onChange={setSearch} />
+      <SearchBox placeholder="جستجو در محصولات..." value={search} onChange={(value) => { setSearch(value); setPage(1) }} />
       <div className="filters"><FilterButton icon={Grid2X2}>دسته‌بندی</FilterButton><FilterButton icon={SlidersHorizontal}>وضعیت موجودی</FilterButton><FilterButton icon={SlidersHorizontal}>مرتب‌سازی</FilterButton></div>
       <button className="primary-button" onClick={() => setCreateOpen(true)}><Plus /> افزودن محصول جدید</button>
       <div className="summary-card card three-columns">
@@ -59,6 +60,7 @@ export function ProductsPage() {
           )
         }) : <EmptyState search={search || 'محصولات'} />)}
       </div>
+      <Pagination page={page} count={data?.count ?? 0} onChange={setPage} />
       {isCreateOpen && <CreateProductModal onClose={() => setCreateOpen(false)} />}
     </div>
   )

@@ -27,6 +27,7 @@ const titles: Record<string, string> = {
   '/more': 'بیشتر',
   '/customers': 'مشتریان',
   '/inventory': 'موجودی',
+  '/inventory/history': 'تاریخچه موجودی',
   '/categories': 'دسته‌بندی‌ها',
   '/members': 'کاربران و نقش‌ها',
 }

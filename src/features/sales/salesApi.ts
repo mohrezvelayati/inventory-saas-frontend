@@ -1,9 +1,10 @@
 import { apiRequest } from '../../lib/api'
 import type { Customer, PaginatedResponse, Sale, SaleItem } from '../../types/api'
 
-export function getSales(status = '') {
-  const query = status ? `?status=${status}` : ''
-  return apiRequest<PaginatedResponse<Sale>>(`/sales/${query}`)
+export function getSales(status = '', page = 1) {
+  const params = new URLSearchParams({ page: String(page) })
+  if (status) params.set('status', status)
+  return apiRequest<PaginatedResponse<Sale>>(`/sales/?${params}`)
 }
 
 export function getSale(id: number) {

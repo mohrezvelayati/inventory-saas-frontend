@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import { ChevronDown, Search } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 export function SearchBox({
@@ -45,4 +45,10 @@ export function EmptyState({ search }: { search: string }) {
       <span>برای «{search}» موردی وجود ندارد.</span>
     </div>
   )
+}
+
+export function Pagination({ page, count, onChange, pageSize = 20 }: { page: number; count: number; onChange: (page: number) => void; pageSize?: number }) {
+  const pages = Math.max(1, Math.ceil(count / pageSize))
+  if (pages <= 1) return null
+  return <nav className="pagination" aria-label="صفحه‌بندی"><button disabled={page <= 1} onClick={() => onChange(page - 1)}><ChevronRight /></button><span>صفحه {page.toLocaleString('fa-IR')} از {pages.toLocaleString('fa-IR')}</span><button disabled={page >= pages} onClick={() => onChange(page + 1)}><ChevronLeft /></button></nav>
 }

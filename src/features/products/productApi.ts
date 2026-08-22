@@ -1,9 +1,10 @@
 import { apiRequest } from '../../lib/api'
 import type { Category, PaginatedResponse, Product, ProductVariant } from '../../types/api'
 
-export function getProducts(search = '') {
-  const query = search ? `?search=${encodeURIComponent(search)}` : ''
-  return apiRequest<PaginatedResponse<Product>>(`/catalog/products/${query}`)
+export function getProducts(search = '', page = 1) {
+  const params = new URLSearchParams({ page: String(page) })
+  if (search) params.set('search', search)
+  return apiRequest<PaginatedResponse<Product>>(`/catalog/products/?${params}`)
 }
 
 export function getProduct(id: number) {

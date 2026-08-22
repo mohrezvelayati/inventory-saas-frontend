@@ -1,8 +1,8 @@
 import { apiRequest } from '../../lib/api'
 import type { PaginatedResponse, WantedProduct } from '../../types/api'
 
-export function getWantedProducts() {
-  return apiRequest<PaginatedResponse<WantedProduct>>('/wanted/')
+export function getWantedProducts(page = 1) {
+  return apiRequest<PaginatedResponse<WantedProduct>>(`/wanted/?page=${page}`)
 }
 
 export type CreateWantedInput = {

@@ -7,7 +7,7 @@ import { SalesPage } from './pages/SalesPage'
 import { MorePage } from './pages/MorePage'
 import { LoginPage, RegisterPage, StoreSetupPage } from './pages/AuthPages'
 import { SaleCreatePage } from './pages/SaleCreatePage'
-import { CategoriesPage, CustomersPage, InventoryPage, MembersPage } from './pages/OperationsPages'
+import { CategoriesPage, CustomersPage, InventoryHistoryPage, InventoryPage, MembersPage } from './pages/OperationsPages'
 import { ProductDetailPage, SaleDetailPage } from './pages/DetailPages'
 import { AuthGate, GuestGate, PermissionGate } from './features/auth/AuthGate'
 import './App.css'
@@ -29,6 +29,7 @@ function App() {
         <Route path="/more" element={<MorePage />} />
         <Route path="/customers" element={<PermissionGate anyOf={['manage_customers']}><CustomersPage /></PermissionGate>} />
         <Route path="/inventory" element={<PermissionGate anyOf={['view_inventory', 'manage_inventory']}><InventoryPage /></PermissionGate>} />
+        <Route path="/inventory/history" element={<PermissionGate anyOf={['view_inventory']}><InventoryHistoryPage /></PermissionGate>} />
         <Route path="/categories" element={<PermissionGate anyOf={['manage_catalog']}><CategoriesPage /></PermissionGate>} />
         <Route path="/members" element={<PermissionGate anyOf={['manage_members']}><MembersPage /></PermissionGate>} />
       </Route>
