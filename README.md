@@ -30,6 +30,22 @@ npm run build
 - Customer, inventory, category and member management
 - Capability-aware navigation and route protection
 - Shared navigation, filters, cards and status components
+- Phone-bound employee invitation creation, copy, revoke and resend workflows
+- Public invitation registration and existing-account acceptance
+- Safe internal login return paths for invitation acceptance
+- Financial and inventory analytics reports
+- Vitest coverage for API contracts, invitation states, redirects and shared UI
+
+## AI and developer handoff
+
+The cross-repository architecture, product decisions, API contracts, security
+invariants, verification commands, and continuation rules are documented in:
+
+- Local sibling checkout: `../inventory-SaaS/AI_PROJECT_HANDOFF.md`
+- GitHub: [`AI_PROJECT_HANDOFF.md`](https://github.com/mohrezvelayati/inventory-SaaS/blob/main/AI_PROJECT_HANDOFF.md)
+
+Read that document before changing frontend behavior or API assumptions.
 
 During development, Vite proxies `/api` requests to Django at
-`http://127.0.0.1:8000`. Copy `.env.example` when a custom API URL is needed.
+`http://127.0.0.1:8000`. Set `VITE_API_BASE_URL` when a custom API URL is
+needed; an `.env.example` file has not been added yet.

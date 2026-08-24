@@ -6,14 +6,16 @@ export type ProductListFilters = {
   search?: string
   page?: number
   categoryId?: string
+  size?: string
   stockStatus?: string
   ordering?: string
 }
 
-export function getProducts({ search = '', page = 1, categoryId = '', stockStatus = '', ordering = '' }: ProductListFilters = {}) {
+export function getProducts({ search = '', page = 1, categoryId = '', size = '', stockStatus = '', ordering = '' }: ProductListFilters = {}) {
   const params = new URLSearchParams({ page: String(page) })
   if (search) params.set('search', search)
   if (categoryId) params.set('category_id', categoryId)
+  if (size) params.set('size', size)
   if (stockStatus) params.set('stock_status', stockStatus)
   if (ordering) params.set('ordering', ordering)
   return apiRequest<PaginatedResponse<Product>>(`/catalog/products/?${params}`)

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Box, CalendarDays, Clock3, LoaderCircle, MessageCircleMore, Pencil, Plus, RotateCcw, Trash2, TrendingUp, X } from 'lucide-react'
+import { ArrowLeft, Box, Clock3, LoaderCircle, MessageCircleMore, Pencil, Plus, RotateCcw, SlidersHorizontal, Trash2, TrendingUp, X } from 'lucide-react'
 import { useState } from 'react'
 import { EmptyState, FilterButton, Pagination, SearchBox, StatusBadge } from '../components/UI'
 import { getAllProducts } from '../features/products/productApi'
@@ -28,7 +28,7 @@ export function RequestsPage() {
   return (
     <div className="page list-page">
       <SearchBox placeholder="جستجو در درخواست‌ها..." value={search} onChange={(value) => { setSearch(value); setPage(1) }} />
-      <div className="filters"><FilterButton icon={MessageCircleMore} active={Boolean(minCount)} onClick={() => setFiltersOpen((value) => !value)}>تعداد درخواست</FilterButton><FilterButton icon={CalendarDays} active={Boolean(dateFrom || dateTo)} onClick={() => setFiltersOpen((value) => !value)}>بازه زمانی</FilterButton><FilterButton icon={Box} active={Boolean(productId)} onClick={() => setFiltersOpen((value) => !value)}>محصول</FilterButton></div>
+      <div className="filters filters--wide"><FilterButton icon={SlidersHorizontal} active={Boolean(minCount || productId || dateFrom || dateTo)} onClick={() => setFiltersOpen((value) => !value)}>فیلتر درخواست‌ها</FilterButton></div>
       {filtersOpen && <section className="filter-panel card"><label>حداقل تعداد درخواست<select value={minCount} onChange={(event) => { setMinCount(event.target.value); setPage(1) }}><option value="">بدون محدودیت</option><option value="2">۲ درخواست و بیشتر</option><option value="3">۳ درخواست و بیشتر</option><option value="5">۵ درخواست و بیشتر</option><option value="10">۱۰ درخواست و بیشتر</option></select></label><label>محصول<select value={productId} onChange={(event) => { setProductId(event.target.value); setPage(1) }}><option value="">همه محصولات</option>{products?.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label><div className="filter-date-row"><label>از تاریخ<input type="date" value={dateFrom} onChange={(event) => { const value = event.target.value; setDateFrom(value); if (dateTo && dateTo < value) setDateTo(''); setPage(1) }} /></label><label>تا تاریخ<input type="date" min={dateFrom} value={dateTo} onChange={(event) => { setDateTo(event.target.value); setPage(1) }} /></label></div><button className="filter-reset" type="button" onClick={() => { setMinCount(''); setProductId(''); setDateFrom(''); setDateTo(''); setPage(1) }}><RotateCcw /> پاک‌کردن فیلترها</button></section>}
       <button className="primary-button" onClick={() => setCreateOpen(true)}><Plus /> ثبت درخواست جدید</button>
       <div className="summary-card card three-columns">

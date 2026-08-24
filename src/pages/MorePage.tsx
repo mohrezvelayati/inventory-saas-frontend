@@ -1,4 +1,4 @@
-import { ArrowLeft, BarChart3, Boxes, Grid2X2, Headphones, LogOut, Settings, ShieldCheck, Store, UsersRound } from 'lucide-react'
+import { ArrowLeft, BarChart3, Boxes, Grid2X2, Headphones, LogOut, Pencil, Settings, ShieldCheck, Store, UsersRound } from 'lucide-react'
 import { useAuth } from '../features/auth/useAuth'
 import { Link } from 'react-router-dom'
 
@@ -18,7 +18,7 @@ export function MorePage() {
     <div className="page more-page">
       <section className="profile-card card">
         <span className="profile-avatar">{user?.full_name?.trim().charAt(0) || user?.username.charAt(0)}</span>
-        <div><h2>{user?.full_name || user?.username}</h2><strong>{user?.membership?.store.name}</strong><Link className="profile-edit-link" to="/profile">مشاهده و ویرایش پروفایل</Link></div>
+                <div><h2>{user?.full_name || user?.username}</h2><strong>{user?.membership?.store.name}</strong><Link className="profile-edit-link" to="/profile" aria-label="ویرایش پروفایل"><Pencil size={14} /></Link></div>
         <span className="store-illustration small">🏪</span>
       </section>
       <h3 className="section-title">دسترسی‌های سریع</h3>

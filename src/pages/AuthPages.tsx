@@ -2,9 +2,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, Eye, EyeOff, LoaderCircle, LockKeyhole, Phone, Store, UserRound } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { z } from 'zod'
 import { ApiError } from '../lib/api'
+import { getSafeNextPath } from '../lib/navigation'
 import { createStore, register as registerRequest } from '../features/auth/authApi'
 import { useAuth } from '../features/auth/useAuth'
 
@@ -26,7 +27,7 @@ type LoginFields = z.infer<typeof loginSchema>
 type RegisterFields = z.infer<typeof registerSchema>
 type StoreFields = z.infer<typeof storeSchema>
 
-function AuthLayout({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
+export function AuthLayout({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
     <main className="auth-page" dir="rtl">
       <div className="auth-brand"><span><Store /></span><div><strong>انبارینو</strong><small>مدیریت هوشمند فروشگاه</small></div></div>
@@ -39,7 +40,7 @@ function AuthLayout({ title, subtitle, children }: { title: string; subtitle: st
   )
 }
 
-function Field({ icon: Icon, error, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { icon: typeof UserRound; error?: string }) {
+export function Field({ icon: Icon, error, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { icon: typeof UserRound; error?: string }) {
   return (
     <label className={`form-field ${error ? 'form-field--error' : ''}`}>
       <span className="field-control"><Icon /><input {...props} /></span>
@@ -53,13 +54,15 @@ export function LoginPage() {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [serverError, setServerError] = useState('')
+  const [searchParams] = useSearchParams()
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFields>({ resolver: zodResolver(loginSchema) })
 
   const submit = handleSubmit(async (fields) => {
     setServerError('')
     try {
       const user = await login(fields.username, fields.password)
-      navigate(user.membership ? '/' : '/onboarding/store', { replace: true })
+      const nextPath = getSafeNextPath(searchParams.get('next'))
+      navigate(nextPath ?? (user.membership ? '/' : '/onboarding/store'), { replace: true })
     } catch (error) {
       setServerError(error instanceof ApiError && error.status === 401 ? 'نام کاربری یا رمز عبور صحیح نیست.' : (error as Error).message)
     }
