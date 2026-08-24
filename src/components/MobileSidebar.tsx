@@ -43,7 +43,7 @@ const navItems: NavItem[] = [
 export function MobileSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user, logout } = useAuth()
   const permissions = user?.membership?.permissions ?? []
-  const allowed = (perms?: PermissionCode[]) => !perms || perms.every((permission) => permissions.includes(permission))
+  const allowed = (perms?: PermissionCode[]) => !perms || perms.some((permission) => permissions.includes(permission))
   const allowedRole = (item: NavItem) => !item.role || user?.membership?.role === item.role
 
   return (

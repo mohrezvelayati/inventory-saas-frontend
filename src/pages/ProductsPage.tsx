@@ -3,7 +3,7 @@ import { ArrowLeft, Box, Grid2X2, LoaderCircle, PackageX, Plus, RotateCcw, Ruler
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState, FilterButton, Pagination, SearchBox, StatusBadge } from '../components/UI'
-import { createProductWithVariant, getAllCategories, getProducts } from '../features/products/productApi'
+import { createProduct, getAllCategories, getProducts } from '../features/products/productApi'
 import { getAllInventory } from '../features/inventory/inventoryApi'
 import { ApiError } from '../lib/api'
 import type { Product } from '../types/api'
@@ -82,10 +82,10 @@ export function ProductsPage() {
 function CreateProductModal({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient()
   const { data: categories } = useQuery({ queryKey: ['categories', 'product-picker'], queryFn: getAllCategories })
-  const [form, setForm] = useState({ name: '', description: '', category: '', size: '', purchase_price: '', sale_price: '' })
+  const [form, setForm] = useState({ name: '', description: '', category: '' })
   const [error, setError] = useState('')
   const mutation = useMutation({
-    mutationFn: createProductWithVariant,
+    mutationFn: createProduct,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['products'] })
       onClose()
@@ -97,27 +97,22 @@ function CreateProductModal({ onClose }: { onClose: () => void }) {
   const submit = (event: React.FormEvent) => {
     event.preventDefault()
     setError('')
-    if (!form.name || !form.size || !form.purchase_price || !form.sale_price) { setError('فیلدهای ضروری را کامل کنید.'); return }
+    if (!form.name.trim()) { setError('نام محصول را وارد کنید.'); return }
     mutation.mutate({
-      name: form.name,
+      name: form.name.trim(),
       description: form.description,
       categories: form.category ? [Number(form.category)] : [],
-      size: form.size,
-      purchase_price: form.purchase_price,
-      sale_price: form.sale_price,
     })
   }
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <section className="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="create-product-title">
-        <header><div><h2 id="create-product-title">افزودن محصول</h2><p>اطلاعات محصول و اولین سایز آن را وارد کنید.</p></div><button onClick={onClose} aria-label="بستن"><X /></button></header>
+        <header><div><h2 id="create-product-title">افزودن محصول</h2><p>مشخصات پایه محصول را ثبت کنید؛ سایز و موجودی بعداً اضافه می‌شوند.</p></div><button onClick={onClose} aria-label="بستن"><X /></button></header>
         <form className="modal-form" onSubmit={submit}>
           <label>نام محصول *<input value={form.name} onChange={(event) => update('name', event.target.value)} placeholder="مثلاً Nike Air Force 1" autoFocus /></label>
           <label>توضیحات<input value={form.description} onChange={(event) => update('description', event.target.value)} placeholder="توضیح کوتاه محصول" /></label>
           <label>دسته‌بندی<select value={form.category} onChange={(event) => update('category', event.target.value)}><option value="">بدون دسته‌بندی</option>{categories?.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
-          <div className="form-row"><label>سایز *<input value={form.size} onChange={(event) => update('size', event.target.value)} placeholder="۴۲" /></label><label>قیمت خرید *<input type="number" value={form.purchase_price} onChange={(event) => update('purchase_price', event.target.value)} placeholder="۰" /></label></div>
-          <label>قیمت فروش (تومان) *<input type="number" value={form.sale_price} onChange={(event) => update('sale_price', event.target.value)} placeholder="۰" /></label>
           {error && <p className="form-alert">{error}</p>}
           <button className="primary-button" disabled={mutation.isPending}>{mutation.isPending ? <LoaderCircle className="spin" /> : <Plus />} ثبت محصول</button>
         </form>

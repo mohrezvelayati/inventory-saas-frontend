@@ -69,33 +69,11 @@ export type CreateProductInput = {
   name: string
   description: string
   categories: number[]
-  size: string
-  purchase_price: string
-  sale_price: string
 }
 
-export async function createProductWithVariant(input: CreateProductInput) {
-  const product = await apiRequest<Product>('/catalog/products/', {
+export function createProduct(input: CreateProductInput) {
+  return apiRequest<Product>('/catalog/products/', {
     method: 'POST',
-    body: JSON.stringify({
-      name: input.name,
-      description: input.description,
-      categories: input.categories,
-    }),
+    body: JSON.stringify(input),
   })
-
-  try {
-    const variant = await apiRequest<ProductVariant>(`/catalog/product/${product.id}/variants/`, {
-      method: 'POST',
-      body: JSON.stringify({
-        size: input.size,
-        purchase_price: input.purchase_price,
-        sale_price: input.sale_price,
-      }),
-    })
-    return { ...product, variants: [variant] }
-  } catch (error) {
-    await apiRequest(`/catalog/products/${product.id}/`, { method: 'DELETE' }).catch(() => undefined)
-    throw error
-  }
 }

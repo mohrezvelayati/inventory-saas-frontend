@@ -4,8 +4,10 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Pagination, SearchBox, StatusBadge, FilterButton } from '../components/UI'
 import { createCustomer, type CustomerInput, deleteCustomer, getCustomers, updateCustomer } from '../features/customers/customersApi'
-import { createInventoryMovement, getAllInventory, getInventory, getInventoryHistory } from '../features/inventory/inventoryApi'
-import { createCategory, deleteCategory, getCategories } from '../features/products/productApi'
+import { getInventory, getInventoryHistory } from '../features/inventory/inventoryApi'
+import { InventoryMovementModal } from '../features/inventory/InventoryMovementModal'
+import { createCategory, deleteCategory, getAllProducts, getCategories } from '../features/products/productApi'
+import { useAuth } from '../features/auth/useAuth'
 import { deleteMember, getMemberPermissions, getMembers, getPermissionCatalog, grantMemberPermission, revokeMemberPermission, updateMemberRole } from '../features/stores/membersApi'
 import { buildInvitationLink, copyText, createInvitation, getInvitations, revokeInvitation } from '../features/stores/invitationsApi'
 import type { Customer, InvitationRole, StoreInvitation, StoreMember } from '../types/api'
@@ -58,27 +60,27 @@ function CustomerEditModal({ customer, onClose }: { customer: Customer; onClose:
 }
 
 export function InventoryPage() {
-  const queryClient = useQueryClient()
+  const { user } = useAuth()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState({ variant: '', quantity: '', movement_type: 'purchase' as 'purchase' | 'adjustment', note: '' })
-  const [error, setError] = useState('')
   const { data, isPending } = useQuery({ queryKey: ['inventory', search, page], queryFn: () => getInventory(search, page) })
-  const { data: inventoryChoices } = useQuery({ queryKey: ['inventory', 'movement-picker'], queryFn: getAllInventory })
+  const { data: products = [] } = useQuery({ queryKey: ['products', 'inventory-picker'], queryFn: getAllProducts })
   const items = data?.results ?? []
   const totalStock = data?.results.reduce((sum, item) => sum + item.current_stock, 0) ?? 0
-  const mutation = useMutation({ mutationFn: createInventoryMovement, onSuccess: async () => { await Promise.all([queryClient.invalidateQueries({ queryKey: ['inventory'] }), queryClient.invalidateQueries({ queryKey: ['products'] }), queryClient.invalidateQueries({ queryKey: ['dashboard'] })]); setOpen(false) }, onError: (mutationError) => setError((mutationError as Error).message) })
+  const permissions = user?.membership?.permissions ?? []
+  const canManageInventory = permissions.includes('manage_inventory')
+  const canCreateVariant = canManageInventory && permissions.includes('manage_catalog')
 
   return <div className="page operation-page">
     <PageHeading title="موجودی" subtitle="مشاهده موجودی و ثبت ورود یا اصلاح کالا" />
     <SearchBox placeholder="جستجو در موجودی..." value={search} onChange={(value) => { setSearch(value); setPage(1) }} />
-    <button className="primary-button" onClick={() => setOpen(true)}><PackagePlus /> ثبت تغییر موجودی</button>
+    {canManageInventory && <button className="primary-button" onClick={() => setOpen(true)}><PackagePlus /> ثبت تغییر موجودی</button>}
     <Link className="secondary-button secondary-link" to="/inventory/history"><History /> تاریخچه حرکات موجودی</Link>
     <div className="operation-summary card"><Boxes /><div><strong>{totalStock.toLocaleString('fa-IR')}</strong><span>موجودی این صفحه از {data?.count ?? '—'} سایز</span></div></div>
     <div className="simple-list">{isPending ? <div className="loading-state"><LoaderCircle className="spin" /></div> : items.map((item) => <article className="simple-row card" key={item.id}><span className="product-visual compact">📦</span><div><strong>{item.product_name}</strong><small>سایز {item.size}</small></div><StatusBadge tone={item.current_stock === 0 ? 'danger' : item.current_stock <= 2 ? 'warning' : 'success'}>{item.current_stock.toLocaleString('fa-IR')} عدد</StatusBadge></article>)}</div>
     <Pagination page={page} count={data?.count ?? 0} onChange={setPage} />
-    {open && <Modal title="تغییر موجودی" subtitle="ورود خرید یا اصلاح موجودی را ثبت کنید." onClose={() => setOpen(false)}><form className="modal-form" onSubmit={(event) => { event.preventDefault(); setError(''); if (!form.variant || !form.quantity || Number(form.quantity) === 0) { setError('کالا و تعداد معتبر ضروری هستند.'); return } mutation.mutate({ variant: Number(form.variant), quantity: Number(form.quantity), movement_type: form.movement_type, note: form.note }) }}><label>کالا و سایز *<select value={form.variant} onChange={(event) => setForm({ ...form, variant: event.target.value })}><option value="">انتخاب کنید</option>{inventoryChoices?.map((item) => <option key={item.id} value={item.id}>{item.product_name} — سایز {item.size}</option>)}</select></label><div className="form-row"><label>نوع حرکت<select value={form.movement_type} onChange={(event) => setForm({ ...form, movement_type: event.target.value as 'purchase' | 'adjustment' })}><option value="purchase">ورود خرید</option><option value="adjustment">اصلاح موجودی</option></select></label><label>تعداد *<input type="number" value={form.quantity} onChange={(event) => setForm({ ...form, quantity: event.target.value })} placeholder={form.movement_type === 'adjustment' ? 'مثبت یا منفی' : 'مثبت'} /></label></div><label>یادداشت<input value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} /></label>{error && <p className="form-alert">{error}</p>}<button className="primary-button" disabled={mutation.isPending}>{mutation.isPending ? <LoaderCircle className="spin" /> : <PackagePlus />} ثبت موجودی</button></form></Modal>}
+    {open && <InventoryMovementModal products={products} canCreateVariant={canCreateVariant} onClose={() => setOpen(false)} />}
   </div>
 }
 
