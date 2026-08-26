@@ -62,6 +62,25 @@ export type Category = {
 
 export type ApiValidationError = Record<string, string[] | string>
 
+export type InvitationRole = 'seller' | 'admin'
+
+export type StoreInvitation = {
+  id: number
+  phone_number: string
+  role: InvitationRole
+  status: 'pending' | 'accepted' | 'revoked'
+  expires_at: string
+  created_at: string
+  token?: string
+}
+
+export type InvitationPreview = {
+  store_name: string
+  role: InvitationRole
+  masked_phone_number: string
+  expires_at: string
+}
+
 export type SaleItem = {
   id: number
   variant: number
@@ -130,6 +149,9 @@ export type Customer = {
   id: number
   full_name: string
   phone_number: string
+  gender: 'male' | 'female'
+  age: number | null
+  total_items_purchased: number
   created_at: string
   updated_at: string
 }

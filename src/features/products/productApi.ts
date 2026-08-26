@@ -6,14 +6,16 @@ export type ProductListFilters = {
   search?: string
   page?: number
   categoryId?: string
+  size?: string
   stockStatus?: string
   ordering?: string
 }
 
-export function getProducts({ search = '', page = 1, categoryId = '', stockStatus = '', ordering = '' }: ProductListFilters = {}) {
+export function getProducts({ search = '', page = 1, categoryId = '', size = '', stockStatus = '', ordering = '' }: ProductListFilters = {}) {
   const params = new URLSearchParams({ page: String(page) })
   if (search) params.set('search', search)
   if (categoryId) params.set('category_id', categoryId)
+  if (size) params.set('size', size)
   if (stockStatus) params.set('stock_status', stockStatus)
   if (ordering) params.set('ordering', ordering)
   return apiRequest<PaginatedResponse<Product>>(`/catalog/products/?${params}`)
@@ -67,33 +69,11 @@ export type CreateProductInput = {
   name: string
   description: string
   categories: number[]
-  size: string
-  purchase_price: string
-  sale_price: string
 }
 
-export async function createProductWithVariant(input: CreateProductInput) {
-  const product = await apiRequest<Product>('/catalog/products/', {
+export function createProduct(input: CreateProductInput) {
+  return apiRequest<Product>('/catalog/products/', {
     method: 'POST',
-    body: JSON.stringify({
-      name: input.name,
-      description: input.description,
-      categories: input.categories,
-    }),
+    body: JSON.stringify(input),
   })
-
-  try {
-    const variant = await apiRequest<ProductVariant>(`/catalog/product/${product.id}/variants/`, {
-      method: 'POST',
-      body: JSON.stringify({
-        size: input.size,
-        purchase_price: input.purchase_price,
-        sale_price: input.sale_price,
-      }),
-    })
-    return { ...product, variants: [variant] }
-  } catch (error) {
-    await apiRequest(`/catalog/products/${product.id}/`, { method: 'DELETE' }).catch(() => undefined)
-    throw error
-  }
 }

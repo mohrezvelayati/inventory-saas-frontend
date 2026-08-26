@@ -5,7 +5,7 @@ const TOKEN_KEY = 'inventory.auth.tokens'
 
 export class ApiError extends Error {
   status: number
-  data: ApiValidationError | { detail?: string } | null
+  data: ApiValidationError | { detail?: string; code?: string } | null
 
   constructor(status: number, data: ApiError['data']) {
     super(getErrorMessage(data) || `خطای ارتباط با سرور (${status})`)

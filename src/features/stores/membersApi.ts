@@ -5,10 +5,6 @@ export function getMembers(page = 1) {
   return apiRequest<PaginatedResponse<StoreMember>>(`/stores/members/?page=${page}`)
 }
 
-export function inviteMember(input: { invite_username: string; role: StoreMember['role'] }) {
-  return apiRequest<StoreMember>('/stores/members/', { method: 'POST', body: JSON.stringify(input) })
-}
-
 export function updateMemberRole(input: { id: number; role: StoreMember['role'] }) {
   return apiRequest<StoreMember>(`/stores/members/${input.id}/`, { method: 'PATCH', body: JSON.stringify({ role: input.role }) })
 }

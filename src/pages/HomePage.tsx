@@ -28,7 +28,7 @@ export function HomePage() {
       <section className="store-hero card">
         <div className="store-identity">
           <span className="soft-icon"><Store /></span>
-          <div><h2>{storeName}</h2><p>شناسه: {user?.membership?.store.id.toLocaleString('fa-IR')}</p></div>
+          <div><h2>{storeName}</h2></div>
         </div>
         <div className="store-illustration" aria-hidden="true">🏪</div>
         <div className="hero-metrics">
@@ -42,7 +42,7 @@ export function HomePage() {
         <div className="quick-actions">
           <Link to="/sales" className="quick-action quick-action--primary"><ShoppingCart /><span>ثبت فروش</span></Link>
           <Link to="/products" className="quick-action"><PackagePlus /><span>افزودن محصول</span></Link>
-          <Link to="/more" className="quick-action"><Box /><span>افزودن موجودی</span></Link>
+          <Link to="/inventory" className="quick-action"><Box /><span>افزودن موجودی</span></Link>
           <Link to="/requests" className="quick-action"><MessageCircleMore /><span>ثبت درخواست</span></Link>
         </div>
       </section>

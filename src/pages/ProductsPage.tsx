@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Box, Grid2X2, LoaderCircle, PackageX, Plus, RotateCcw, SlidersHorizontal, X } from 'lucide-react'
+import { ArrowLeft, Box, Grid2X2, LoaderCircle, PackageX, Plus, RotateCcw, Ruler, SlidersHorizontal, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState, FilterButton, Pagination, SearchBox, StatusBadge } from '../components/UI'
-import { createProductWithVariant, getAllCategories, getProducts } from '../features/products/productApi'
+import { createProduct, getAllCategories, getProducts } from '../features/products/productApi'
+import { getAllInventory } from '../features/inventory/inventoryApi'
 import { ApiError } from '../lib/api'
 import type { Product } from '../types/api'
 
@@ -22,15 +23,21 @@ function getProductStatus(product: Product) {
 export function ProductsPage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
-  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [openFilter, setOpenFilter] = useState<'category' | 'size' | 'stock' | 'ordering' | ''>('')
   const [categoryId, setCategoryId] = useState('')
+  const [size, setSize] = useState('')
   const [stockStatus, setStockStatus] = useState('')
   const [ordering, setOrdering] = useState('')
   const [isCreateOpen, setCreateOpen] = useState(false)
   const { data: categories } = useQuery({ queryKey: ['categories', 'product-filters'], queryFn: getAllCategories })
+  const { data: inventory } = useQuery({ queryKey: ['inventory', 'product-filters'], queryFn: getAllInventory })
+  const sizes = useMemo(() => {
+    const unique = new Set(inventory?.map((item) => String(item.size).trim()).filter(Boolean) ?? [])
+    return [...unique].sort((a, b) => a.localeCompare(b, 'fa'))
+  }, [inventory])
   const { data, isPending, isError, error } = useQuery({
-    queryKey: ['products', search, page, categoryId, stockStatus, ordering],
-    queryFn: () => getProducts({ search, page, categoryId, stockStatus, ordering }),
+    queryKey: ['products', search, page, categoryId, size, stockStatus, ordering],
+    queryFn: () => getProducts({ search, page, categoryId, size, stockStatus, ordering }),
   })
   const products = useMemo(() => data?.results ?? [], [data?.results])
   const totals = useMemo(() => products.reduce((result, product) => {
@@ -43,8 +50,8 @@ export function ProductsPage() {
   return (
     <div className="page list-page">
       <SearchBox placeholder="جستجو در محصولات..." value={search} onChange={(value) => { setSearch(value); setPage(1) }} />
-      <div className="filters"><FilterButton icon={Grid2X2} active={Boolean(categoryId)} onClick={() => setFiltersOpen((value) => !value)}>دسته‌بندی</FilterButton><FilterButton icon={SlidersHorizontal} active={Boolean(stockStatus)} onClick={() => setFiltersOpen((value) => !value)}>وضعیت موجودی</FilterButton><FilterButton icon={SlidersHorizontal} active={Boolean(ordering)} onClick={() => setFiltersOpen((value) => !value)}>مرتب‌سازی</FilterButton></div>
-      {filtersOpen && <section className="filter-panel card"><label>دسته‌بندی<select value={categoryId} onChange={(event) => { setCategoryId(event.target.value); setPage(1) }}><option value="">همه دسته‌بندی‌ها</option>{categories?.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label>وضعیت موجودی<select value={stockStatus} onChange={(event) => { setStockStatus(event.target.value); setPage(1) }}><option value="">همه وضعیت‌ها</option><option value="in_stock">موجود</option><option value="low_stock">کم‌موجود</option><option value="out_of_stock">ناموجود</option></select></label><label>مرتب‌سازی<select value={ordering} onChange={(event) => { setOrdering(event.target.value); setPage(1) }}><option value="">قدیمی‌ترین</option><option value="-created">جدیدترین</option><option value="name">نام: الف تا ی</option><option value="-name">نام: ی تا الف</option></select></label><button className="filter-reset" type="button" onClick={() => { setCategoryId(''); setStockStatus(''); setOrdering(''); setPage(1) }}><RotateCcw /> پاک‌کردن فیلترها</button></section>}
+      <div className="filters filters--four"><FilterButton icon={Grid2X2} active={Boolean(categoryId) || openFilter === 'category'} onClick={() => setOpenFilter((value) => value === 'category' ? '' : 'category')}>دسته‌بندی</FilterButton><FilterButton icon={Ruler} active={Boolean(size) || openFilter === 'size'} onClick={() => setOpenFilter((value) => value === 'size' ? '' : 'size')}>سایز</FilterButton><FilterButton icon={SlidersHorizontal} active={Boolean(stockStatus) || openFilter === 'stock'} onClick={() => setOpenFilter((value) => value === 'stock' ? '' : 'stock')}>وضعیت موجودی</FilterButton><FilterButton icon={SlidersHorizontal} active={Boolean(ordering) || openFilter === 'ordering'} onClick={() => setOpenFilter((value) => value === 'ordering' ? '' : 'ordering')}>مرتب‌سازی</FilterButton></div>
+      {openFilter && <section className="filter-panel card">{openFilter === 'category' && <label className="filter-full">دسته‌بندی<select value={categoryId} onChange={(event) => { setCategoryId(event.target.value); setPage(1) }}><option value="">همه دسته‌بندی‌ها</option>{categories?.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>}{openFilter === 'size' && <label className="filter-full">سایز<select value={size} onChange={(event) => { setSize(event.target.value); setPage(1) }}><option value="">همه سایزها</option>{sizes.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>}{openFilter === 'stock' && <label className="filter-full">وضعیت موجودی<select value={stockStatus} onChange={(event) => { setStockStatus(event.target.value); setPage(1) }}><option value="">همه وضعیت‌ها</option><option value="in_stock">موجود</option><option value="low_stock">کم‌موجود</option><option value="out_of_stock">ناموجود</option></select></label>}{openFilter === 'ordering' && <label className="filter-full">مرتب‌سازی<select value={ordering} onChange={(event) => { setOrdering(event.target.value); setPage(1) }}><option value="">قدیمی‌ترین</option><option value="-created">جدیدترین</option><option value="name">نام: الف تا ی</option><option value="-name">نام: ی تا الف</option></select></label>}<button className="filter-reset" type="button" onClick={() => { setCategoryId(''); setSize(''); setStockStatus(''); setOrdering(''); setPage(1) }}><RotateCcw /> پاک‌کردن فیلترها</button></section>}
       <button className="primary-button" onClick={() => setCreateOpen(true)}><Plus /> افزودن محصول جدید</button>
       <div className="summary-card card three-columns">
         <div><Box /><strong>{data?.count ?? '—'}</strong><span>کل محصولات</span></div>
@@ -75,10 +82,10 @@ export function ProductsPage() {
 function CreateProductModal({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient()
   const { data: categories } = useQuery({ queryKey: ['categories', 'product-picker'], queryFn: getAllCategories })
-  const [form, setForm] = useState({ name: '', description: '', category: '', size: '', purchase_price: '', sale_price: '' })
+  const [form, setForm] = useState({ name: '', description: '', category: '' })
   const [error, setError] = useState('')
   const mutation = useMutation({
-    mutationFn: createProductWithVariant,
+    mutationFn: createProduct,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['products'] })
       onClose()
@@ -90,27 +97,22 @@ function CreateProductModal({ onClose }: { onClose: () => void }) {
   const submit = (event: React.FormEvent) => {
     event.preventDefault()
     setError('')
-    if (!form.name || !form.size || !form.purchase_price || !form.sale_price) { setError('فیلدهای ضروری را کامل کنید.'); return }
+    if (!form.name.trim()) { setError('نام محصول را وارد کنید.'); return }
     mutation.mutate({
-      name: form.name,
+      name: form.name.trim(),
       description: form.description,
       categories: form.category ? [Number(form.category)] : [],
-      size: form.size,
-      purchase_price: form.purchase_price,
-      sale_price: form.sale_price,
     })
   }
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <section className="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="create-product-title">
-        <header><div><h2 id="create-product-title">افزودن محصول</h2><p>اطلاعات محصول و اولین سایز آن را وارد کنید.</p></div><button onClick={onClose} aria-label="بستن"><X /></button></header>
+        <header><div><h2 id="create-product-title">افزودن محصول</h2><p>مشخصات پایه محصول را ثبت کنید؛ سایز و موجودی بعداً اضافه می‌شوند.</p></div><button onClick={onClose} aria-label="بستن"><X /></button></header>
         <form className="modal-form" onSubmit={submit}>
           <label>نام محصول *<input value={form.name} onChange={(event) => update('name', event.target.value)} placeholder="مثلاً Nike Air Force 1" autoFocus /></label>
           <label>توضیحات<input value={form.description} onChange={(event) => update('description', event.target.value)} placeholder="توضیح کوتاه محصول" /></label>
           <label>دسته‌بندی<select value={form.category} onChange={(event) => update('category', event.target.value)}><option value="">بدون دسته‌بندی</option>{categories?.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
-          <div className="form-row"><label>سایز *<input value={form.size} onChange={(event) => update('size', event.target.value)} placeholder="۴۲" /></label><label>قیمت خرید *<input type="number" value={form.purchase_price} onChange={(event) => update('purchase_price', event.target.value)} placeholder="۰" /></label></div>
-          <label>قیمت فروش (تومان) *<input type="number" value={form.sale_price} onChange={(event) => update('sale_price', event.target.value)} placeholder="۰" /></label>
           {error && <p className="form-alert">{error}</p>}
           <button className="primary-button" disabled={mutation.isPending}>{mutation.isPending ? <LoaderCircle className="spin" /> : <Plus />} ثبت محصول</button>
         </form>
