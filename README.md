@@ -16,6 +16,14 @@ npm run lint
 npm run build
 ```
 
+## Production deployment
+
+Vercel builds this repository as a Vite SPA. Copy `.env.example` for local
+configuration. In Vercel, set `VITE_API_BASE_URL` to the Render API including
+`/api/v1`, add the Sentry DSN, and keep password reset disabled until the SMS
+provider is configured. `vercel.json` preserves direct navigation to React
+Router paths.
+
 ## Current status
 
 - React, TypeScript and Vite foundation
@@ -48,4 +56,4 @@ Read that document before changing frontend behavior or API assumptions.
 
 During development, Vite proxies `/api` requests to Django at
 `http://127.0.0.1:8000`. Set `VITE_API_BASE_URL` when a custom API URL is
-needed; an `.env.example` file has not been added yet.
+needed; `.env.example` documents the complete frontend configuration contract.
