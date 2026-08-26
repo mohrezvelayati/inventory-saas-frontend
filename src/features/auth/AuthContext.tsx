@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { tokenStore } from '../../lib/api'
 import type { CurrentUser } from '../../types/api'
-import { getCurrentUser, login as loginRequest } from './authApi'
+import { getCurrentUser, login as loginRequest, logout as logoutRequest } from './authApi'
 import { AuthContext } from './auth-context'
 import type { AuthStatus } from './auth-context'
 
@@ -10,10 +10,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null)
   const [status, setStatus] = useState<AuthStatus>(() => tokenStore.get() ? 'loading' : 'anonymous')
 
-  const logout = useCallback(() => {
-    tokenStore.clear()
-    setUser(null)
-    setStatus('anonymous')
+  const logout = useCallback(async () => {
+    try { await logoutRequest() } catch { /* Local logout must always complete. */ }
+    finally {
+      tokenStore.clear()
+      setUser(null)
+      setStatus('anonymous')
+    }
   }, [])
 
   const refreshUser = useCallback(async () => {

@@ -1,8 +1,8 @@
 import { useMutation } from '@tanstack/react-query'
 import { ArrowRight, CheckCircle2, LoaderCircle, Save, ShieldCheck, Store, UserRound } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { updateCurrentUser } from '../features/auth/authApi'
+import { Link, useNavigate } from 'react-router-dom'
+import { changePassword, updateCurrentUser } from '../features/auth/authApi'
 import { useAuth } from '../features/auth/useAuth'
 import { updateCurrentStore } from '../features/stores/storeApi'
 
@@ -11,16 +11,27 @@ function SettingsHeading({ title, subtitle }: { title: string; subtitle: string 
 }
 
 export function ProfileSettingsPage() {
-  const { user, refreshUser } = useAuth()
+  const { user, refreshUser, logout } = useAuth()
+  const navigate = useNavigate()
   const [form, setForm] = useState({ username: user?.username ?? '', full_name: user?.full_name ?? '', phone_number: user?.phone_number ?? '' })
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [passwords, setPasswords] = useState({ current: '', next: '' })
   const mutation = useMutation({
     mutationFn: updateCurrentUser,
     onSuccess: async () => {
       await refreshUser()
       setError('')
       setMessage('اطلاعات پروفایل با موفقیت ذخیره شد.')
+    },
+    onError: (mutationError) => { setMessage(''); setError((mutationError as Error).message) },
+  })
+  const passwordMutation = useMutation({
+    mutationFn: () => changePassword(passwords.current, passwords.next),
+    onSuccess: async () => {
+      setPasswords({ current: '', next: '' })
+      await logout()
+      navigate('/login', { replace: true, state: { message: 'رمز عبور تغییر کرد؛ دوباره وارد شوید.' } })
     },
     onError: (mutationError) => { setMessage(''); setError((mutationError as Error).message) },
   })
@@ -36,6 +47,12 @@ export function ProfileSettingsPage() {
       {error && <p className="form-alert">{error}</p>}
       {message && <p className="form-success"><CheckCircle2 />{message}</p>}
       <button className="primary-button" disabled={mutation.isPending}>{mutation.isPending ? <LoaderCircle className="spin" /> : <Save />} ذخیره تغییرات</button>
+    </form>
+    <form className="detail-form card" onSubmit={(event) => { event.preventDefault(); setMessage(''); setError(''); passwordMutation.mutate() }}>
+      <h3>تغییر رمز عبور</h3>
+      <label>رمز فعلی<input type="password" autoComplete="current-password" value={passwords.current} onChange={(event) => setPasswords({ ...passwords, current: event.target.value })} required /></label>
+      <label>رمز جدید<input type="password" autoComplete="new-password" minLength={8} value={passwords.next} onChange={(event) => setPasswords({ ...passwords, next: event.target.value })} required /></label>
+      <button className="primary-button" disabled={passwordMutation.isPending}>{passwordMutation.isPending ? <LoaderCircle className="spin" /> : <ShieldCheck />} تغییر رمز عبور</button>
     </form>
   </div>
 }

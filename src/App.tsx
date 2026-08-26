@@ -5,7 +5,7 @@ import { ProductsPage } from './pages/ProductsPage'
 import { RequestsPage } from './pages/RequestsPage'
 import { SalesPage } from './pages/SalesPage'
 import { MorePage } from './pages/MorePage'
-import { LoginPage, RegisterPage, StoreSetupPage } from './pages/AuthPages'
+import { ForgotPasswordPage, LoginPage, RegisterPage, StoreSetupPage } from './pages/AuthPages'
 import { SaleCreatePage } from './pages/SaleCreatePage'
 import { CategoriesPage, CustomersPage, InventoryHistoryPage, InventoryPage, MembersPage } from './pages/OperationsPages'
 import { ProductDetailPage, SaleDetailPage } from './pages/DetailPages'
@@ -21,6 +21,7 @@ function App() {
     <Routes>
       <Route path="/login" element={<GuestGate><LoginPage /></GuestGate>} />
       <Route path="/register" element={<GuestGate><RegisterPage /></GuestGate>} />
+      <Route path="/forgot-password" element={<GuestGate><ForgotPasswordPage /></GuestGate>} />
       <Route path="/invite/:token" element={<InvitePage />} />
       <Route path="/onboarding/store" element={<AuthGate requireStore={false}><StoreSetupPage /></AuthGate>} />
       <Route element={<AuthGate><AppShell /></AuthGate>}>

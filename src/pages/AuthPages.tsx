@@ -2,11 +2,16 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, Eye, EyeOff, LoaderCircle, LockKeyhole, Phone, Store, UserRound } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { z } from 'zod'
 import { ApiError } from '../lib/api'
 import { getSafeNextPath } from '../lib/navigation'
-import { createStore, register as registerRequest } from '../features/auth/authApi'
+import {
+  confirmPasswordReset,
+  createStore,
+  register as registerRequest,
+  requestPasswordReset,
+} from '../features/auth/authApi'
 import { useAuth } from '../features/auth/useAuth'
 
 const loginSchema = z.object({
@@ -22,10 +27,18 @@ const registerSchema = z.object({
 })
 
 const storeSchema = z.object({ name: z.string().min(2, 'نام فروشگاه را وارد کنید') })
+const resetSchema = z.object({
+  phone_number: z.string().regex(/^09\d{9}$/, 'شماره تلفن باید با ۰۹ شروع شود و ۱۱ رقم باشد'),
+  code: z.string().regex(/^\d{6}$/, 'کد تأیید باید ۶ رقم باشد'),
+  new_password: z.string().min(8, 'رمز عبور باید حداقل ۸ کاراکتر باشد'),
+})
 
 type LoginFields = z.infer<typeof loginSchema>
 type RegisterFields = z.infer<typeof registerSchema>
 type StoreFields = z.infer<typeof storeSchema>
+type ResetFields = z.infer<typeof resetSchema>
+
+const passwordResetEnabled = import.meta.env.VITE_PASSWORD_RESET_ENABLED === 'true'
 
 export function AuthLayout({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
@@ -52,6 +65,7 @@ export function Field({ icon: Icon, error, ...props }: React.InputHTMLAttributes
 export function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [showPassword, setShowPassword] = useState(false)
   const [serverError, setServerError] = useState('')
   const [searchParams] = useSearchParams()
@@ -71,6 +85,7 @@ export function LoginPage() {
   return (
     <AuthLayout title="خوش آمدید" subtitle="برای ورود به پنل اطلاعات حساب خود را وارد کنید.">
       <form className="auth-form" onSubmit={submit}>
+        {typeof location.state?.message === 'string' && <p className="form-success">{location.state.message}</p>}
         <Field icon={UserRound} placeholder="نام کاربری" autoComplete="username" error={errors.username?.message} {...register('username')} />
         <div className="password-wrap">
           <Field icon={LockKeyhole} type={showPassword ? 'text' : 'password'} placeholder="رمز عبور" autoComplete="current-password" error={errors.password?.message} {...register('password')} />
@@ -79,9 +94,57 @@ export function LoginPage() {
         {serverError && <p className="form-alert">{serverError}</p>}
         <button className="auth-submit" disabled={isSubmitting}>{isSubmitting ? <LoaderCircle className="spin" /> : <>ورود به پنل <ArrowLeft /></>}</button>
       </form>
+      {passwordResetEnabled && <p className="auth-switch"><Link to="/forgot-password">رمز عبور را فراموش کرده‌اید؟</Link></p>}
       <p className="auth-switch">حساب کاربری ندارید؟ <Link to="/register">ثبت‌نام کنید</Link></p>
     </AuthLayout>
   )
+}
+
+export function ForgotPasswordPage() {
+  const navigate = useNavigate()
+  const [requested, setRequested] = useState(false)
+  const [message, setMessage] = useState('')
+  const [serverError, setServerError] = useState('')
+  const { register, handleSubmit, getValues, formState: { errors, isSubmitting } } = useForm<ResetFields>({
+    resolver: zodResolver(resetSchema),
+    defaultValues: { phone_number: '', code: '', new_password: '' },
+  })
+
+  const requestCode = async () => {
+    setServerError('')
+    const phone = getValues('phone_number')
+    if (!/^09\d{9}$/.test(phone)) { setServerError('شماره تلفن معتبر وارد کنید.'); return }
+    try {
+      await requestPasswordReset(phone)
+      setRequested(true)
+      setMessage('اگر حسابی با این شماره وجود داشته باشد، کد بازیابی ارسال می‌شود.')
+    } catch (error) { setServerError((error as Error).message) }
+  }
+
+  const submit = handleSubmit(async (fields) => {
+    setServerError('')
+    try {
+      await confirmPasswordReset(fields.phone_number, fields.code, fields.new_password)
+      navigate('/login', { replace: true, state: { message: 'رمز عبور تغییر کرد؛ اکنون وارد شوید.' } })
+    } catch (error) { setServerError((error as Error).message) }
+  })
+
+  if (!passwordResetEnabled) return <Navigate to="/login" replace />
+
+  return <AuthLayout title="بازیابی رمز عبور" subtitle="کد یک‌بارمصرف به شماره ثبت‌شده ارسال می‌شود.">
+    <form className="auth-form" onSubmit={submit}>
+      <Field icon={Phone} placeholder="شماره تلفن" inputMode="tel" autoComplete="tel" error={errors.phone_number?.message} {...register('phone_number')} />
+      {!requested && <button type="button" className="auth-submit" onClick={requestCode}>ارسال کد بازیابی</button>}
+      {requested && <>
+        <Field icon={LockKeyhole} placeholder="کد ۶ رقمی" inputMode="numeric" autoComplete="one-time-code" error={errors.code?.message} {...register('code')} />
+        <Field icon={LockKeyhole} type="password" placeholder="رمز عبور جدید" autoComplete="new-password" error={errors.new_password?.message} {...register('new_password')} />
+        <button className="auth-submit" disabled={isSubmitting}>{isSubmitting ? <LoaderCircle className="spin" /> : 'تغییر رمز عبور'}</button>
+      </>}
+      {message && <p className="form-success">{message}</p>}
+      {serverError && <p className="form-alert">{serverError}</p>}
+    </form>
+    <p className="auth-switch"><Link to="/login">بازگشت به ورود</Link></p>
+  </AuthLayout>
 }
 
 export function RegisterPage() {

@@ -41,3 +41,33 @@ export function createStore(name: string) {
     body: JSON.stringify({ name }),
   })
 }
+
+export async function logout() {
+  const refresh = tokenStore.get()?.refresh
+  if (!refresh) return
+  await apiRequest<void>('/auth/logout/', {
+    method: 'POST',
+    body: JSON.stringify({ refresh }),
+  }, false)
+}
+
+export function changePassword(current_password: string, new_password: string) {
+  return apiRequest<void>('/auth/password/change/', {
+    method: 'POST',
+    body: JSON.stringify({ current_password, new_password }),
+  })
+}
+
+export function requestPasswordReset(phone_number: string) {
+  return apiRequest<{ detail: string }>('/auth/password-reset/request/', {
+    method: 'POST',
+    body: JSON.stringify({ phone_number }),
+  }, false)
+}
+
+export function confirmPasswordReset(phone_number: string, code: string, new_password: string) {
+  return apiRequest<void>('/auth/password-reset/confirm/', {
+    method: 'POST',
+    body: JSON.stringify({ phone_number, code, new_password }),
+  }, false)
+}
