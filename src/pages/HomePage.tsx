@@ -8,21 +8,31 @@ import {
   ShoppingCart,
   Store,
   LoaderCircle,
+  TrendingUp,
+  UserPlus,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../features/auth/useAuth'
-import { getDashboard } from '../features/dashboard/dashboardApi'
+import { getDashboard, getReports } from '../features/dashboard/dashboardApi'
 
 const money = (value?: string) => value ? Number(value).toLocaleString('fa-IR') : '۰'
+const localIsoDate = (date: Date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 export function HomePage() {
   const { user } = useAuth()
   const storeName = user?.membership?.store.name ?? 'فروشگاه شما'
+  const today = localIsoDate(new Date())
   const { data: dashboard, isPending, isError } = useQuery({ queryKey: ['dashboard'], queryFn: getDashboard })
+  const { data: todayReport, isPending: reportPending, isError: reportError } = useQuery({ queryKey: ['reports', 'home', today], queryFn: () => getReports(today, today) })
 
-  if (isPending) return <div className="loading-state home-loading"><LoaderCircle className="spin" /><span>در حال آماده‌سازی داشبورد...</span></div>
-  if (isError || !dashboard) return <div className="error-state home-loading"><AlertTriangle /><strong>داشبورد دریافت نشد</strong><span>اتصال بک‌اند و دسترسی view_dashboard را بررسی کنید.</span></div>
+  if (isPending || reportPending) return <div className="loading-state home-loading"><LoaderCircle className="spin" /><span>در حال آماده‌سازی داشبورد...</span></div>
+  if (isError || reportError || !dashboard || !todayReport) return <div className="error-state home-loading"><AlertTriangle /><strong>داشبورد دریافت نشد</strong><span>اتصال بک‌اند و دسترسی view_dashboard را بررسی کنید.</span></div>
   return (
     <div className="page home-page">
       <section className="store-hero card">
@@ -33,16 +43,16 @@ export function HomePage() {
         <div className="store-illustration" aria-hidden="true">🏪</div>
         <div className="hero-metrics">
           <div><BarChart3 /><span>فروش امروز</span><strong>{money(dashboard.sales.revenue)}</strong><small>{dashboard.sales.orders_count.toLocaleString('fa-IR')} سفارش</small></div>
-          <div><Box /><span>موجودی کل</span><strong>{dashboard.inventory.total_stock.toLocaleString('fa-IR')}</strong><small>{dashboard.inventory.total_variants.toLocaleString('fa-IR')} تنوع محصول</small></div>
+          <div><TrendingUp /><span>سود امروز</span><strong>{money(todayReport.sales.gross_profit)}</strong><small>تومان</small></div>
         </div>
       </section>
 
       <section>
         <h3 className="section-title">دسترسی سریع</h3>
         <div className="quick-actions">
-          <Link to="/sales" className="quick-action quick-action--primary"><ShoppingCart /><span>ثبت فروش</span></Link>
+          <Link to="/customers" className="quick-action"><UserPlus /><span>افزودن مشتری</span></Link>
+          <Link to="/sales" className="quick-action"><ShoppingCart /><span>ثبت فروش</span></Link>
           <Link to="/products" className="quick-action"><PackagePlus /><span>افزودن محصول</span></Link>
-          <Link to="/inventory" className="quick-action"><Box /><span>افزودن موجودی</span></Link>
           <Link to="/requests" className="quick-action"><MessageCircleMore /><span>ثبت درخواست</span></Link>
         </div>
       </section>

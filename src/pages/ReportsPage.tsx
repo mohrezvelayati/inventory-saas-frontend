@@ -45,13 +45,13 @@ export function ReportsPage() {
     <div className="subpage-heading"><Link to="/more" aria-label="بازگشت"><ArrowRight /></Link><div><h2>گزارش‌ها</h2><p>تحلیل فروش، سود و وضعیت موجودی فروشگاه</p></div></div>
 
     <section className="report-range card">
-      <div className="report-presets">{[7, 30, 90].map((days) => <button key={days} className={preset === days ? 'active' : ''} onClick={() => applyPreset(days)}>{days.toLocaleString('fa-IR')} روز</button>)}</div>
+      <div className="report-presets">{[{ days: 1, label: 'امروز' }, { days: 7, label: '۷ روز' }, { days: 30, label: '۳۰ روز' }, { days: 90, label: '۹۰ روز' }].map((item) => <button key={item.days} className={preset === item.days ? 'active' : ''} onClick={() => applyPreset(item.days)}>{item.label}</button>)}</div>
       <div className="filter-date-row"><label>از تاریخ<input type="date" value={dateFrom} max={dateTo} onChange={(event) => { setPreset(0); setDateFrom(event.target.value) }} /></label><label>تا تاریخ<input type="date" value={dateTo} min={dateFrom} onChange={(event) => { setPreset(0); setDateTo(event.target.value) }} /></label></div>
     </section>
 
     <section className="report-metrics">
       <article className="card"><CircleDollarSign /><span>درآمد</span><strong>{money(data.sales.revenue)}</strong><small>تومان</small></article>
-      <article className="card"><TrendingUp /><span>سود ناخالص</span><strong>{money(data.sales.gross_profit)}</strong><small>{profitMargin.toLocaleString('fa-IR')}٪ حاشیه سود</small></article>
+      <article className="card"><TrendingUp /><span>سود</span><strong>{money(data.sales.gross_profit)}</strong><small>{profitMargin.toLocaleString('fa-IR')}٪ حاشیه سود</small></article>
       <article className="card"><ShoppingBag /><span>سفارش‌ها</span><strong>{data.sales.orders_count.toLocaleString('fa-IR')}</strong><small>{money(data.sales.average_order)} میانگین</small></article>
       <article className="card"><ReceiptText /><span>تخفیف</span><strong>{money(data.sales.discount)}</strong><small>{money(data.sales.cost)} بهای خرید</small></article>
     </section>

@@ -57,7 +57,6 @@ export function SalesPage() {
         }) : <EmptyState search={search || 'فروش‌ها'} />)}
       </div>
       <Pagination page={page} count={data?.count ?? 0} onChange={setPage} />
-      <Link className="floating-button" aria-label="ثبت فروش" to="/sales/new"><Plus /></Link>
     </div>
   )
 }
