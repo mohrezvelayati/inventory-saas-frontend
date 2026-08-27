@@ -10,6 +10,7 @@ import { createCategory, deleteCategory, getAllProducts, getCategories } from '.
 import { useAuth } from '../features/auth/useAuth'
 import { deleteMember, getMemberPermissions, getMembers, getPermissionCatalog, grantMemberPermission, revokeMemberPermission, updateMemberRole } from '../features/stores/membersApi'
 import { buildInvitationLink, copyText, createInvitation, getInvitations, revokeInvitation } from '../features/stores/invitationsApi'
+import { getPermissionCopy } from '../features/stores/permissionCopy'
 import type { Customer, InvitationRole, StoreInvitation, StoreMember } from '../types/api'
 
 function PageHeading({ title, subtitle }: { title: string; subtitle: string }) {
@@ -179,7 +180,7 @@ function MemberPermissionsModal({ member, onClose }: { member: StoreMember; onCl
   const revokeMutation = useMutation({ mutationFn: (membershipPermissionId: number) => revokeMemberPermission(member.id, membershipPermissionId), onSuccess: refresh, onError: (mutationError) => setError((mutationError as Error).message) })
   const busy = grantMutation.isPending || revokeMutation.isPending
   return <Modal title={`دسترسی‌های ${member.user_full_name || member.username}`} subtitle="هر قابلیت را متناسب با مسئولیت این عضو فعال کنید." onClose={onClose}>
-    <div className="permission-list">{catalogPending || assignedPending ? <div className="mini-loading"><LoaderCircle className="spin" /></div> : catalog?.results.map((permission) => { const current = assigned?.results.find((item) => item.permission === permission.id); return <label key={permission.id}><span><strong>{permission.name}</strong><small>{permission.code}</small></span><input type="checkbox" checked={Boolean(current)} disabled={busy} onChange={() => current ? revokeMutation.mutate(current.id) : grantMutation.mutate(permission.id)} /></label> })}</div>
+    <div className="permission-list">{catalogPending || assignedPending ? <div className="mini-loading"><LoaderCircle className="spin" /></div> : catalog?.results.map((permission) => { const current = assigned?.results.find((item) => item.permission === permission.id); const copy = getPermissionCopy(permission); return <label key={permission.id}><span><strong>{copy.title}</strong><small>{copy.description}</small></span><input type="checkbox" checked={Boolean(current)} disabled={busy} onChange={() => current ? revokeMutation.mutate(current.id) : grantMutation.mutate(permission.id)} /></label> })}</div>
     {error && <p className="form-alert">{error}</p>}
     <button className="primary-button" onClick={onClose}>تمام</button>
   </Modal>
