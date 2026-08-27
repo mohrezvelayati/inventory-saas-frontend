@@ -66,6 +66,12 @@ export function SaleCreatePage() {
         </>}
       </section>
 
+      <section className="sale-details card">
+        <h3>اطلاعات فروش</h3>
+        <label>مشتری (اختیاری)<select value={customer} onChange={(event) => setCustomer(event.target.value)}><option value="">بدون مشتری</option>{customers?.map((item) => <option key={item.id} value={item.id}>{item.full_name} — {item.phone_number}</option>)}</select></label>
+        <div className="form-row"><label>کانال فروش<select value={channel} onChange={(event) => setChannel(event.target.value as Sale['channel'])}><option value="store">حضوری</option><option value="instagram">اینستاگرام</option><option value="website">وب‌سایت</option><option value="referral">معرفی</option><option value="other">سایر</option></select></label><label>روش پرداخت<select value={payment} onChange={(event) => setPayment(event.target.value as Sale['payment_method'])}><option value="card">کارت پوز</option><option value="cash">نقد</option><option value="online">آنلاین</option></select></label></div>
+      </section>
+
       <section className="cart-section">
         <h3>اقلام فاکتور <span>{cart.length.toLocaleString('fa-IR')}</span></h3>
         {cart.length === 0 ? <div className="empty-cart card"><ShoppingBag /><span>هنوز کالایی اضافه نشده است.</span></div> : cart.map((item) => (
@@ -74,12 +80,6 @@ export function SaleCreatePage() {
             <div className="quantity-control"><button onClick={() => setCart((current) => current.map((cartItem) => cartItem.variant.id === item.variant.id ? { ...cartItem, quantity: Math.max(1, cartItem.quantity - 1) } : cartItem))}><Minus /></button><b>{item.quantity.toLocaleString('fa-IR')}</b><button onClick={() => setCart((current) => current.map((cartItem) => cartItem.variant.id === item.variant.id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem))}><Plus /></button><button className="remove" onClick={() => setCart((current) => current.filter((cartItem) => cartItem.variant.id !== item.variant.id))}><Trash2 /></button></div>
           </article>
         ))}
-      </section>
-
-      <section className="sale-details card">
-        <h3>اطلاعات فروش</h3>
-        <label>مشتری (اختیاری)<select value={customer} onChange={(event) => setCustomer(event.target.value)}><option value="">بدون مشتری</option>{customers?.map((item) => <option key={item.id} value={item.id}>{item.full_name} — {item.phone_number}</option>)}</select></label>
-        <div className="form-row"><label>کانال فروش<select value={channel} onChange={(event) => setChannel(event.target.value as Sale['channel'])}><option value="store">حضوری</option><option value="instagram">اینستاگرام</option><option value="website">وب‌سایت</option><option value="referral">معرفی</option><option value="other">سایر</option></select></label><label>روش پرداخت<select value={payment} onChange={(event) => setPayment(event.target.value as Sale['payment_method'])}><option value="card">کارت پوز</option><option value="cash">نقد</option><option value="online">آنلاین</option></select></label></div>
       </section>
       {error && <p className="form-alert">{error}</p>}
       <div className="checkout-bar"><div><span>مبلغ نهایی</span><strong>{subtotal.toLocaleString('fa-IR')} <small>تومان</small></strong></div><button onClick={() => mutation.mutate()} disabled={mutation.isPending}>{mutation.isPending ? <LoaderCircle className="spin" /> : <ShoppingBag />} تکمیل فروش</button></div>
