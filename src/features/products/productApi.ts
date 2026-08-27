@@ -1,6 +1,6 @@
 import { apiRequest } from '../../lib/api'
 import { getAllResults } from '../../lib/pagination'
-import type { Category, PaginatedResponse, Product, ProductVariant } from '../../types/api'
+import type { Category, PaginatedResponse, Product, ProductVariant, UpdateProductSalePriceInput } from '../../types/api'
 
 export type ProductListFilters = {
   search?: string
@@ -27,6 +27,10 @@ export function getProduct(id: number) {
 
 export function updateProduct(id: number, input: { name: string; description: string; categories: number[] }) {
   return apiRequest<Product>(`/catalog/products/${id}/`, { method: 'PATCH', body: JSON.stringify(input) })
+}
+
+export function updateProductSalePrice(id: number, input: UpdateProductSalePriceInput) {
+  return apiRequest<Product>(`/catalog/products/${id}/prices/`, { method: 'PATCH', body: JSON.stringify(input) })
 }
 
 export function deleteProduct(id: number) {

@@ -53,6 +53,10 @@ export type Product = {
   updated_at: string
 }
 
+export type UpdateProductSalePriceInput = {
+  sale_price: number
+}
+
 export type Category = {
   id: number
   name: string
