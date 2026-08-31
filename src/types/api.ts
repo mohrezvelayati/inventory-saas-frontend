@@ -184,6 +184,25 @@ export type InventoryMovementHistory = InventoryMovement & {
   created_by_username: string | null
 }
 
+export type BatchPurchaseInput = {
+  product: number
+  purchase_price?: number
+  sale_price?: number
+  note: string
+  items: { size: string; quantity: number }[]
+}
+
+export type BatchPurchaseResponse = {
+  product: number
+  items: {
+    movement: number
+    variant: number
+    size: string
+    quantity: number
+    current_stock: number
+  }[]
+}
+
 export type StoreMember = {
   id: number
   store: number

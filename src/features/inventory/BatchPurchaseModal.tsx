@@ -1,25 +1,44 @@
-import { useMutation } from '@tanstack/react-query'
-import { CheckCircle2, LoaderCircle, Minus, PackagePlus, Plus, Trash2, X } from 'lucide-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { LoaderCircle, Minus, PackagePlus, Plus, Trash2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import type { Product } from '../../types/api'
+import { ApiError } from '../../lib/api'
+import type { BatchPurchaseInput, BatchPurchaseResponse, Product } from '../../types/api'
+import { createBatchPurchase } from './inventoryApi'
 
 const READY_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'] as const
-
-export type BatchPurchasePrototypePayload = {
-  product: number
-  purchase_price: number
-  sale_price: number
-  note: string
-  items: { size: string; quantity: number }[]
-}
 
 type Props = {
   products: Product[]
   onClose: () => void
-  onPrototypeSubmit?: (payload: BatchPurchasePrototypePayload) => Promise<BatchPurchasePrototypePayload> | BatchPurchasePrototypePayload
+  onSuccess: (response: BatchPurchaseResponse) => void
 }
 
-export function BatchPurchasePrototypeModal({ products, onClose, onPrototypeSubmit }: Props) {
+function firstErrorMessage(value: unknown): string | null {
+  if (typeof value === 'string') return value
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const message = firstErrorMessage(item)
+      if (message) return message
+    }
+  }
+  if (value && typeof value === 'object') {
+    for (const item of Object.values(value)) {
+      const message = firstErrorMessage(item)
+      if (message) return message
+    }
+  }
+  return null
+}
+
+function getBatchPurchaseError(error: unknown) {
+  if (error instanceof ApiError) {
+    return firstErrorMessage(error.data) ?? error.message
+  }
+  return error instanceof Error ? error.message : 'ثبت گروهی موجودی ناموفق بود.'
+}
+
+export function BatchPurchaseModal({ products, onClose, onSuccess }: Props) {
+  const queryClient = useQueryClient()
   const [productId, setProductId] = useState('')
   const [quantities, setQuantities] = useState<Record<string, number>>({})
   const [purchasePrice, setPurchasePrice] = useState('')
@@ -37,9 +56,18 @@ export function BatchPurchasePrototypeModal({ products, onClose, onPrototypeSubm
   const hasNewSize = selectedItems.some((item) => !variantsBySize.has(item.size))
 
   const mutation = useMutation({
-    mutationFn: async (payload: BatchPurchasePrototypePayload) => onPrototypeSubmit
-      ? await onPrototypeSubmit(payload)
-      : payload,
+    mutationFn: (payload: BatchPurchaseInput) => createBatchPurchase(payload),
+    onSuccess: async (response) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory-history'] }),
+        queryClient.invalidateQueries({ queryKey: ['products'] }),
+        queryClient.invalidateQueries({ queryKey: ['product', response.product] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+      ])
+      onSuccess(response)
+    },
+    onError: (mutationError) => setError(getBatchPurchaseError(mutationError)),
   })
 
   const chooseProduct = (value: string) => {
@@ -56,6 +84,7 @@ export function BatchPurchasePrototypeModal({ products, onClose, onPrototypeSubm
 
   const changeQuantity = (size: string, change: number) => {
     mutation.reset()
+    setError('')
     setQuantities((current) => {
       const quantity = Math.max(0, (current[size] ?? 0) + change)
       if (quantity === 0) {
@@ -69,6 +98,7 @@ export function BatchPurchasePrototypeModal({ products, onClose, onPrototypeSubm
 
   const removeSize = (size: string) => {
     mutation.reset()
+    setError('')
     setQuantities((current) => {
       const next = { ...current }
       delete next[size]
@@ -78,6 +108,7 @@ export function BatchPurchasePrototypeModal({ products, onClose, onPrototypeSubm
 
   const clearAll = () => {
     mutation.reset()
+    setError('')
     setQuantities({})
   }
 
@@ -87,25 +118,28 @@ export function BatchPurchasePrototypeModal({ products, onClose, onPrototypeSubm
     if (!selectedProduct || selectedItems.length === 0) return
     const numericPurchasePrice = Number(purchasePrice)
     const numericSalePrice = Number(salePrice)
-    if (hasNewSize && (!purchasePrice || !salePrice || numericPurchasePrice < 0 || numericSalePrice < 0)) {
+    if (hasNewSize && (!purchasePrice || !salePrice || !Number.isFinite(numericPurchasePrice) || !Number.isFinite(numericSalePrice) || numericPurchasePrice < 0 || numericSalePrice < 0)) {
       setError('برای سایزهای جدید، قیمت خرید و فروش معتبر وارد کنید.')
       return
     }
-    mutation.mutate({
+    const input: BatchPurchaseInput = {
       product: selectedProduct.id,
-      purchase_price: numericPurchasePrice,
-      sale_price: numericSalePrice,
       note: note.trim(),
       items: selectedItems,
-    })
+    }
+    if (hasNewSize) {
+      input.purchase_price = numericPurchasePrice
+      input.sale_price = numericSalePrice
+    }
+    mutation.mutate(input)
   }
 
   const totalQuantity = selectedItems.reduce((sum, item) => sum + item.quantity, 0)
 
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !mutation.isPending && onClose()}>
       <section className="modal-sheet batch-purchase-modal" role="dialog" aria-modal="true" aria-labelledby="batch-purchase-title">
-        <header><div><h2 id="batch-purchase-title">ورود گروهی خرید</h2><p>محصول را انتخاب کنید و برای هر سایز، تعداد ورودی را مشخص کنید.</p></div><button type="button" onClick={onClose} aria-label="بستن"><X /></button></header>
+        <header><div><h2 id="batch-purchase-title">ورود گروهی خرید</h2><p>محصول را انتخاب کنید و برای هر سایز، تعداد ورودی را مشخص کنید.</p></div><button type="button" onClick={onClose} disabled={mutation.isPending} aria-label="بستن"><X /></button></header>
         <form className="modal-form" onSubmit={submit} noValidate>
           <label>محصول *<select value={productId} onChange={(event) => chooseProduct(event.target.value)} autoFocus><option value="">انتخاب محصول</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
 
@@ -134,10 +168,9 @@ export function BatchPurchasePrototypeModal({ products, onClose, onPrototypeSubm
             </div>)}
           </section>}
 
-          {hasNewSize && <div className="form-row"><label>قیمت خرید مشترک *<input type="number" min="0" value={purchasePrice} onChange={(event) => { mutation.reset(); setPurchasePrice(event.target.value) }} /></label><label>قیمت فروش مشترک *<input type="number" min="0" value={salePrice} onChange={(event) => { mutation.reset(); setSalePrice(event.target.value) }} /></label></div>}
-          <label>یادداشت<input value={note} onChange={(event) => { mutation.reset(); setNote(event.target.value) }} placeholder="مثلاً محموله جدید" /></label>
+          {hasNewSize && <div className="form-row"><label>قیمت خرید مشترک *<input type="number" min="0" value={purchasePrice} onChange={(event) => { mutation.reset(); setError(''); setPurchasePrice(event.target.value) }} /></label><label>قیمت فروش مشترک *<input type="number" min="0" value={salePrice} onChange={(event) => { mutation.reset(); setError(''); setSalePrice(event.target.value) }} /></label></div>}
+          <label>یادداشت<input value={note} onChange={(event) => { mutation.reset(); setError(''); setNote(event.target.value) }} placeholder="مثلاً محموله جدید" /></label>
           {error && <p className="form-alert">{error}</p>}
-          {mutation.isSuccess && <p className="form-success"><CheckCircle2 /> نمونه ثبت گروهی آماده شد؛ هیچ درخواستی به سرور ارسال نشد.</p>}
           <button className="primary-button" disabled={selectedItems.length === 0 || mutation.isPending}>{mutation.isPending ? <LoaderCircle className="spin" /> : <PackagePlus />} ثبت همه</button>
         </form>
       </section>

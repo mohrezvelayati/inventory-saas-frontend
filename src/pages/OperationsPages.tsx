@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { Pagination, SearchBox, StatusBadge, FilterButton } from '../components/UI'
 import { createCustomer, type CustomerInput, deleteCustomer, getCustomers, updateCustomer } from '../features/customers/customersApi'
 import { getInventory, getInventoryHistory } from '../features/inventory/inventoryApi'
-import { BatchPurchasePrototypeModal } from '../features/inventory/BatchPurchasePrototypeModal'
+import { BatchPurchaseModal } from '../features/inventory/BatchPurchaseModal'
 import { InventoryMovementModal } from '../features/inventory/InventoryMovementModal'
 import { createCategory, deleteCategory, getAllProducts, getCategories } from '../features/products/productApi'
 import { useAuth } from '../features/auth/useAuth'
@@ -67,6 +67,7 @@ export function InventoryPage() {
   const [page, setPage] = useState(1)
   const [open, setOpen] = useState(false)
   const [batchOpen, setBatchOpen] = useState(false)
+  const [batchMessage, setBatchMessage] = useState('')
   const { data, isPending } = useQuery({ queryKey: ['inventory', search, page], queryFn: () => getInventory(search, page) })
   const { data: products = [] } = useQuery({ queryKey: ['products', 'inventory-picker'], queryFn: getAllProducts })
   const items = data?.results ?? []
@@ -79,13 +80,14 @@ export function InventoryPage() {
     <PageHeading title="موجودی" subtitle="مشاهده موجودی و ثبت ورود یا اصلاح کالا" />
     <SearchBox placeholder="جستجو در موجودی..." value={search} onChange={(value) => { setSearch(value); setPage(1) }} />
     {canManageInventory && <button className="primary-button" onClick={() => setOpen(true)}><PackagePlus /> ثبت تغییر موجودی</button>}
-    {canCreateVariant && <button className="secondary-button" onClick={() => setBatchOpen(true)}><Boxes /> ورود گروهی خرید</button>}
+    {canCreateVariant && <button className="secondary-button" onClick={() => { setBatchMessage(''); setBatchOpen(true) }}><Boxes /> ورود گروهی خرید</button>}
+    {batchMessage && <p className="form-success"><Check />{batchMessage}</p>}
     <Link className="secondary-button secondary-link" to="/inventory/history"><History /> تاریخچه حرکات موجودی</Link>
     <div className="operation-summary card"><Boxes /><div><strong>{totalStock.toLocaleString('fa-IR')}</strong><span>موجودی این صفحه از {data?.count ?? '—'} سایز</span></div></div>
     <div className="simple-list">{isPending ? <div className="loading-state"><LoaderCircle className="spin" /></div> : items.map((item) => <article className="simple-row card" key={item.id}><span className="product-visual compact">📦</span><div><strong>{item.product_name}</strong><small>سایز {item.size}</small></div><StatusBadge tone={item.current_stock === 0 ? 'danger' : item.current_stock <= 2 ? 'warning' : 'success'}>{item.current_stock.toLocaleString('fa-IR')} عدد</StatusBadge></article>)}</div>
     <Pagination page={page} count={data?.count ?? 0} onChange={setPage} />
     {open && <InventoryMovementModal products={products} canCreateVariant={canCreateVariant} onClose={() => setOpen(false)} />}
-    {batchOpen && <BatchPurchasePrototypeModal products={products} onClose={() => setBatchOpen(false)} />}
+    {batchOpen && <BatchPurchaseModal products={products} onClose={() => setBatchOpen(false)} onSuccess={(response) => { const totalQuantity = response.items.reduce((sum, item) => sum + item.quantity, 0); setBatchOpen(false); setBatchMessage(`${response.items.length.toLocaleString('fa-IR')} سایز و ${totalQuantity.toLocaleString('fa-IR')} عدد با موفقیت ثبت شد.`) }} />}
   </div>
 }
 

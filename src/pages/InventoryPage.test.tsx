@@ -3,13 +3,14 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthContext, type AuthContextValue } from '../features/auth/auth-context'
-import { getInventory } from '../features/inventory/inventoryApi'
+import { createBatchPurchase, getInventory } from '../features/inventory/inventoryApi'
 import { getAllProducts } from '../features/products/productApi'
 import type { PermissionCode, Product } from '../types/api'
 import { InventoryPage } from './OperationsPages'
 
 vi.mock('../features/inventory/inventoryApi', async (importOriginal) => ({
   ...await importOriginal<typeof import('../features/inventory/inventoryApi')>(),
+  createBatchPurchase: vi.fn(),
   getInventory: vi.fn(),
 }))
 vi.mock('../features/products/productApi', async (importOriginal) => ({
@@ -55,6 +56,10 @@ describe('InventoryPage batch purchase prototype access', () => {
     vi.clearAllMocks()
     vi.mocked(getInventory).mockResolvedValue({ count: 0, next: null, previous: null, results: [] })
     vi.mocked(getAllProducts).mockResolvedValue(products)
+    vi.mocked(createBatchPurchase).mockResolvedValue({
+      product: 2,
+      items: [{ movement: 10, variant: 4, size: '40', quantity: 1, current_stock: 2 }],
+    })
   })
 
   it('shows the batch button only with both permissions and keeps the single-size modal working', async () => {
@@ -87,5 +92,17 @@ describe('InventoryPage batch purchase prototype access', () => {
     fireEvent.click(await screen.findByRole('button', { name: /ثبت تغییر موجودی/ }))
     expect(await screen.findByRole('dialog', { name: 'تغییر موجودی' })).toBeInTheDocument()
     expect(screen.queryByRole('option', { name: 'افزودن سایز جدید' })).not.toBeInTheDocument()
+  })
+
+  it('closes the batch modal and shows a success summary after the real mutation succeeds', async () => {
+    renderPage(['manage_inventory', 'manage_catalog'])
+
+    fireEvent.click(await screen.findByRole('button', { name: /ورود گروهی خرید/ }))
+    fireEvent.change(screen.getByLabelText('محصول *'), { target: { value: '2' } })
+    fireEvent.click(screen.getByRole('button', { name: 'افزایش سایز 40' }))
+    fireEvent.click(screen.getByRole('button', { name: 'ثبت همه' }))
+
+    expect(await screen.findByText('۱ سایز و ۱ عدد با موفقیت ثبت شد.')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'ورود گروهی خرید' })).not.toBeInTheDocument()
   })
 })
