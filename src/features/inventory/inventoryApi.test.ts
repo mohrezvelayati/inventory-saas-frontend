@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createInventoryEntry, MovementFailedAfterVariantCreationError } from './inventoryApi'
+import { createBatchPurchase, createInventoryEntry, MovementFailedAfterVariantCreationError } from './inventoryApi'
 import { createProduct } from '../products/productApi'
 
 describe('product and inventory creation workflow', () => {
@@ -18,6 +18,28 @@ describe('product and inventory creation workflow', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/catalog/products/')
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ name: product.name, description: '', categories: [] })
+  })
+
+  it('posts the batch purchase contract to the real endpoint', async () => {
+    const response = {
+      product: 12,
+      items: [{ movement: 9, variant: 40, size: '40', quantity: 2, current_stock: 5 }],
+    }
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify(response), { status: 201 }))
+    const input = {
+      product: 12,
+      purchase_price: 4000000,
+      sale_price: 5800000,
+      note: 'محموله جدید',
+      items: [{ size: '40', quantity: 2 }],
+    }
+
+    const result = await createBatchPurchase(input)
+
+    expect(result).toEqual(response)
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/inventory/purchases/batch/')
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: 'POST' })
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual(input)
   })
 
   it('creates a new size before recording its first inventory movement', async () => {
