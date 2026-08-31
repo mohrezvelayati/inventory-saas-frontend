@@ -1,7 +1,7 @@
 import { apiRequest } from '../../lib/api'
 import { getAllResults } from '../../lib/pagination'
 import { createVariant } from '../products/productApi'
-import type { InventoryItem, InventoryMovement, InventoryMovementHistory, PaginatedResponse, ProductVariant } from '../../types/api'
+import type { BatchPurchaseInput, BatchPurchaseResponse, InventoryItem, InventoryMovement, InventoryMovementHistory, PaginatedResponse, ProductVariant } from '../../types/api'
 
 export function getInventory(search = '', page = 1) {
   const params = new URLSearchParams({ page: String(page) })
@@ -15,6 +15,10 @@ export function getAllInventory() {
 
 export function createInventoryMovement(input: { variant: number; quantity: number; movement_type: 'purchase' | 'adjustment'; note: string }) {
   return apiRequest<InventoryMovement>('/inventory/movements/create/', { method: 'POST', body: JSON.stringify(input) })
+}
+
+export function createBatchPurchase(input: BatchPurchaseInput) {
+  return apiRequest<BatchPurchaseResponse>('/inventory/purchases/batch/', { method: 'POST', body: JSON.stringify(input) })
 }
 
 export type InventoryEntryInput = {
