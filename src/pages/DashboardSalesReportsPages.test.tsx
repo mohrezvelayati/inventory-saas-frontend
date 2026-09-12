@@ -45,9 +45,11 @@ function renderPage(page: React.ReactNode, withAuth = false) {
       username: 'manager',
       full_name: 'مدیر',
       phone_number: '09123456789',
+      is_demo: false,
       membership: { id: 1, role: 'manager', permissions: ['view_dashboard'], store: { id: 1, name: 'فروشگاه تست' } },
     },
     login: vi.fn(),
+    loginDemo: vi.fn(),
     logout: vi.fn(),
     refreshUser: vi.fn(),
   }

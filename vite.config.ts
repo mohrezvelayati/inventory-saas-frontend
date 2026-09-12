@@ -7,6 +7,9 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
+    env: {
+      VITE_DEMO_MODE_ENABLED: 'true',
+    },
   },
   server: {
     proxy: {

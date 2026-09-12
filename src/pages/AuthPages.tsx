@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, Eye, EyeOff, LoaderCircle, LockKeyhole, Phone, Store, UserRound } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, LoaderCircle, LockKeyhole, Phone, Sparkles, Store, UserRound } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
@@ -39,6 +39,7 @@ type StoreFields = z.infer<typeof storeSchema>
 type ResetFields = z.infer<typeof resetSchema>
 
 const passwordResetEnabled = import.meta.env.VITE_PASSWORD_RESET_ENABLED === 'true'
+const demoModeEnabled = import.meta.env.VITE_DEMO_MODE_ENABLED === 'true'
 
 export function AuthLayout({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
@@ -63,11 +64,12 @@ export function Field({ icon: Icon, error, ...props }: React.InputHTMLAttributes
 }
 
 export function LoginPage() {
-  const { login } = useAuth()
+  const { login, loginDemo } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [showPassword, setShowPassword] = useState(false)
   const [serverError, setServerError] = useState('')
+  const [isDemoSubmitting, setIsDemoSubmitting] = useState(false)
   const [searchParams] = useSearchParams()
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFields>({ resolver: zodResolver(loginSchema) })
 
@@ -82,6 +84,24 @@ export function LoginPage() {
     }
   })
 
+  const submitDemo = async () => {
+    setServerError('')
+    setIsDemoSubmitting(true)
+    try {
+      const user = await loginDemo()
+      const nextPath = getSafeNextPath(searchParams.get('next'))
+      navigate(nextPath ?? (user.membership ? '/' : '/onboarding/store'), { replace: true })
+    } catch (error) {
+      setServerError(
+        error instanceof ApiError && error.status === 429
+          ? 'تعداد ورودهای دمو زیاد شده است؛ کمی بعد دوباره تلاش کنید.'
+          : 'نسخهٔ نمایشی موقتاً در دسترس نیست.',
+      )
+    } finally {
+      setIsDemoSubmitting(false)
+    }
+  }
+
   return (
     <AuthLayout title="خوش آمدید" subtitle="برای ورود به پنل اطلاعات حساب خود را وارد کنید.">
       <form className="auth-form" onSubmit={submit}>
@@ -92,8 +112,16 @@ export function LoginPage() {
           <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label="نمایش رمز عبور">{showPassword ? <EyeOff /> : <Eye />}</button>
         </div>
         {serverError && <p className="form-alert">{serverError}</p>}
-        <button className="auth-submit" disabled={isSubmitting}>{isSubmitting ? <LoaderCircle className="spin" /> : <>ورود به پنل <ArrowLeft /></>}</button>
+        <button className="auth-submit" disabled={isSubmitting || isDemoSubmitting}>{isSubmitting ? <LoaderCircle className="spin" /> : <>ورود به پنل <ArrowLeft /></>}</button>
       </form>
+      {demoModeEnabled && <>
+        <div className="auth-divider"><span>یا</span></div>
+        <button type="button" className="demo-login-button" disabled={isSubmitting || isDemoSubmitting} onClick={submitDemo}>
+          {isDemoSubmitting ? <LoaderCircle className="spin" /> : <Sparkles />}
+          ورود به نسخهٔ نمایشی
+        </button>
+        <p className="demo-login-note">بدون ثبت‌نام وارد شوید و همهٔ امکانات برنامه را امتحان کنید.</p>
+      </>}
       {passwordResetEnabled && <p className="auth-switch"><Link to="/forgot-password">رمز عبور را فراموش کرده‌اید؟</Link></p>}
       <p className="auth-switch">حساب کاربری ندارید؟ <Link to="/register">ثبت‌نام کنید</Link></p>
     </AuthLayout>
