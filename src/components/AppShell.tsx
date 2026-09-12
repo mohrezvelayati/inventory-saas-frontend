@@ -3,6 +3,7 @@ import {
   Bell,
   Box,
   Home,
+  Info,
   Menu,
   MessageCircleMore,
   MoreHorizontal,
@@ -82,6 +83,16 @@ export function AppShell() {
           {showBellBadge && <span>{(unreadCount > 99 ? '99+' : unreadCount.toLocaleString('fa-IR'))}</span>}
         </Link>
       </header>
+
+      {user?.is_demo && (
+        <aside className="demo-account-banner" role="status">
+          <Info />
+          <span>
+            <strong>نسخهٔ نمایشی عمومی</strong>
+            <small>این حساب مشترک است؛ تغییرات شما تا بازنشانی بعدی باقی می‌ماند.</small>
+          </span>
+        </aside>
+      )}
 
       <main className="page-content">
         <Outlet />

@@ -7,6 +7,7 @@ export type AuthContextValue = {
   user: CurrentUser | null
   status: AuthStatus
   login: (username: string, password: string) => Promise<CurrentUser>
+  loginDemo: () => Promise<CurrentUser>
   logout: () => Promise<void>
   refreshUser: () => Promise<CurrentUser>
 }

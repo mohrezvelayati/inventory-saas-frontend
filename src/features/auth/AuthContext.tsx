@@ -2,7 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { tokenStore } from '../../lib/api'
 import type { CurrentUser } from '../../types/api'
-import { getCurrentUser, login as loginRequest, logout as logoutRequest } from './authApi'
+import {
+  getCurrentUser,
+  login as loginRequest,
+  loginDemo as loginDemoRequest,
+  logout as logoutRequest,
+} from './authApi'
 import { AuthContext } from './auth-context'
 import type { AuthStatus } from './auth-context'
 
@@ -33,6 +38,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return currentUser
   }, [])
 
+  const loginDemo = useCallback(async () => {
+    const currentUser = await loginDemoRequest()
+    setUser(currentUser)
+    setStatus('authenticated')
+    return currentUser
+  }, [])
+
   useEffect(() => {
     // Auth bootstrap intentionally synchronizes persisted tokens with server state.
     // oxlint-disable-next-line react/set-state-in-effect
@@ -45,8 +57,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [logout])
 
   const value = useMemo(
-    () => ({ user, status, login, logout, refreshUser }),
-    [user, status, login, logout, refreshUser],
+    () => ({ user, status, login, loginDemo, logout, refreshUser }),
+    [user, status, login, loginDemo, logout, refreshUser],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

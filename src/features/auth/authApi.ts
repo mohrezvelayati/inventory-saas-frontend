@@ -17,6 +17,14 @@ export async function login(username: string, password: string) {
   return getCurrentUser()
 }
 
+export async function loginDemo() {
+  const tokens = await apiRequest<AuthTokens>('/auth/demo/', {
+    method: 'POST',
+  }, false)
+  tokenStore.set(tokens)
+  return getCurrentUser()
+}
+
 export function register(input: RegisterInput) {
   return apiRequest<CurrentUser>('/users/register/', {
     method: 'POST',

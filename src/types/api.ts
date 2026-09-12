@@ -23,6 +23,7 @@ export type CurrentUser = {
   username: string
   full_name: string
   phone_number: string
+  is_demo: boolean
   membership: Membership | null
 }
 

@@ -8,6 +8,11 @@
 - Backend API: <https://inventory-saas-api-k6wp.onrender.com>
 - API documentation: <https://inventory-saas-api-k6wp.onrender.com/api/v1/docs/>
 
+Set `VITE_DEMO_MODE_ENABLED=true` for the portfolio deployment. The login page
+then shows **ورود به نسخهٔ نمایشی**, which opens the shared writable demo store
+without asking for credentials. A visible in-app notice explains that visitor
+changes remain until the backend resets the synthetic tenant.
+
 ## Development
 
 ```bash
@@ -51,6 +56,7 @@ from `/*` to `/index.html` preserves direct navigation to React Router paths.
 - Safe internal login return paths for invitation acceptance
 - Financial and inventory analytics reports
 - Vitest coverage for API contracts, invitation states, redirects and shared UI
+- One-click public demo login and shared-account status banner
 
 During development, Vite proxies `/api` requests to Django at
 `http://127.0.0.1:8000`. Set `VITE_API_BASE_URL` when a custom API URL is

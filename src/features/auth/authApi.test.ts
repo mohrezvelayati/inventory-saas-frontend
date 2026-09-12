@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { changePassword, confirmPasswordReset, logout, requestPasswordReset } from './authApi'
+import { changePassword, confirmPasswordReset, loginDemo, logout, requestPasswordReset } from './authApi'
 import { tokenStore } from '../../lib/api'
 
 describe('authentication security API', () => {
@@ -19,6 +19,27 @@ describe('authentication security API', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/auth/logout/')
     expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: 'POST' })
     expect(fetchMock.mock.calls[0][1]?.body).toBe(JSON.stringify({ refresh: 'refresh-token' }))
+  })
+
+  it('starts a demo session and loads the marked current user', async () => {
+    const currentUser = {
+      id: 1,
+      username: 'portfolio_demo',
+      full_name: 'مدیر فروشگاه دمو',
+      phone_number: '09000000001',
+      is_demo: true,
+      membership: null,
+    }
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access: 'demo-access', refresh: 'demo-refresh' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(currentUser), { status: 200 }))
+
+    await expect(loginDemo()).resolves.toEqual(currentUser)
+
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/auth/demo/')
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: 'POST' })
+    expect(fetchMock.mock.calls[1][0]).toBe('/api/v1/users/me/')
+    expect(tokenStore.get()).toEqual({ access: 'demo-access', refresh: 'demo-refresh' })
   })
 
   it('uses the password change and reset contracts', async () => {

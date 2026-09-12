@@ -30,6 +30,7 @@ function renderPage(authOverrides: Partial<AuthContextValue> = {}) {
     user: null,
     status: 'anonymous',
     login: vi.fn(),
+    loginDemo: vi.fn(),
     logout: vi.fn(),
     refreshUser: vi.fn(),
     ...authOverrides,
@@ -96,7 +97,7 @@ describe('InvitePage', () => {
     vi.mocked(acceptInvitation).mockResolvedValue({})
     const auth = renderPage({
       status: 'authenticated',
-      user: { id: 9, username: 'seller', full_name: 'Seller', phone_number: '09123456789', membership: null },
+      user: { id: 9, username: 'seller', full_name: 'Seller', phone_number: '09123456789', is_demo: false, membership: null },
       refreshUser: vi.fn().mockResolvedValue({}),
     })
 
