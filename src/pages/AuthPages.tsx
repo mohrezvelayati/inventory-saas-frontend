@@ -39,7 +39,7 @@ type StoreFields = z.infer<typeof storeSchema>
 type ResetFields = z.infer<typeof resetSchema>
 
 const passwordResetEnabled = import.meta.env.VITE_PASSWORD_RESET_ENABLED === 'true'
-const demoModeEnabled = import.meta.env.VITE_DEMO_MODE_ENABLED === 'true'
+const demoModeEnabled = import.meta.env.VITE_DEMO_MODE_ENABLED !== 'false'
 
 export function AuthLayout({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
