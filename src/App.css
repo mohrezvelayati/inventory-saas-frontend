@@ -168,6 +168,8 @@
 .demo-login-button { width: 100%; height: 50px; border: 1px solid #cdb9fa; border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--primary); background: var(--primary-soft); font-size: 12px; font-weight: 700; }.demo-login-button:disabled { opacity: .65; cursor: wait; }.demo-login-button svg { width: 18px; }
 .demo-login-note { margin: 8px 0 0; color: var(--muted); font-size: 9px; line-height: 1.8; text-align: center; }
 .form-alert { padding: 10px 12px; border-radius: 10px; color: #c43138; background: #fff0f1; font-size: 10px; line-height: 1.7; margin: 0; }
+.password-reset-edit { align-self: flex-start; margin-top: -8px; border: 0; color: var(--primary); background: transparent; font-size: 10px; font-weight: 700; }
+.field-control input:read-only { color: var(--muted); cursor: not-allowed; }
 .auth-switch { text-align: center; color: var(--muted); font-size: 10px; margin: 20px 0 0; }.auth-switch a { color: var(--primary); font-weight: 700; text-decoration: none; }.auth-footer { margin-top: 22px; color: #9997a7; font-size: 9px; }
 .onboarding-icon { width: 76px; height: 76px; display: grid; place-items: center; margin: 0 auto 24px; border-radius: 23px; background: var(--primary-soft); color: var(--primary); }.onboarding-icon svg { width: 34px; height: 34px; }
 .text-button { display: block; margin: 17px auto 0; border: 0; background: transparent; color: var(--muted); font-size: 10px; }

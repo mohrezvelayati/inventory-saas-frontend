@@ -58,5 +58,17 @@ describe('authentication security API', () => {
       '/api/v1/auth/password-reset/request/',
       '/api/v1/auth/password-reset/confirm/',
     ])
+    expect(fetchMock.mock.calls[1][1]).toMatchObject({
+      method: 'POST',
+      body: JSON.stringify({ phone_number: '09121112222' }),
+    })
+    expect(fetchMock.mock.calls[2][1]).toMatchObject({
+      method: 'POST',
+      body: JSON.stringify({
+        phone_number: '09121112222',
+        code: '123456',
+        new_password: 'new-strong-pass',
+      }),
+    })
   })
 })
