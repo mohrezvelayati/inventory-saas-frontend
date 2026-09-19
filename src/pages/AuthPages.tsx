@@ -31,6 +31,10 @@ const resetSchema = z.object({
   phone_number: z.string().regex(/^09\d{9}$/, 'شماره تلفن باید با ۰۹ شروع شود و ۱۱ رقم باشد'),
   code: z.string().regex(/^\d{6}$/, 'کد تأیید باید ۶ رقم باشد'),
   new_password: z.string().min(8, 'رمز عبور باید حداقل ۸ کاراکتر باشد'),
+  confirm_password: z.string().min(1, 'تکرار رمز عبور را وارد کنید'),
+}).refine(({ new_password, confirm_password }) => new_password === confirm_password, {
+  message: 'تکرار رمز عبور با رمز جدید یکسان نیست',
+  path: ['confirm_password'],
 })
 
 type LoginFields = z.infer<typeof loginSchema>
@@ -38,8 +42,26 @@ type RegisterFields = z.infer<typeof registerSchema>
 type StoreFields = z.infer<typeof storeSchema>
 type ResetFields = z.infer<typeof resetSchema>
 
-const passwordResetEnabled = import.meta.env.VITE_PASSWORD_RESET_ENABLED === 'true'
 const demoModeEnabled = import.meta.env.VITE_DEMO_MODE_ENABLED !== 'false'
+
+function isPasswordResetEnabled() {
+  return import.meta.env.VITE_PASSWORD_RESET_ENABLED === 'true'
+}
+
+function getPasswordResetError(error: unknown) {
+  if (!(error instanceof ApiError)) return 'عملیات انجام نشد؛ دوباره تلاش کنید.'
+  const code = error.data && 'code' in error.data ? error.data.code : undefined
+  if (error.status === 429 || code === 'rate_limited') {
+    return 'تعداد درخواست‌ها بیش از حد مجاز است؛ کمی بعد دوباره تلاش کنید.'
+  }
+  if (code === 'invalid_or_expired') {
+    return 'کد واردشده نادرست یا منقضی شده است؛ دوباره کد دریافت کنید.'
+  }
+  if (code === 'too_many_attempts') {
+    return 'تعداد تلاش‌ها بیش از حد مجاز است؛ کد جدیدی دریافت کنید.'
+  }
+  return 'عملیات انجام نشد؛ دوباره تلاش کنید.'
+}
 
 export function AuthLayout({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
@@ -122,7 +144,7 @@ export function LoginPage() {
         </button>
         <p className="demo-login-note">بدون ثبت‌نام وارد شوید و همهٔ امکانات برنامه را امتحان کنید.</p>
       </>}
-      {passwordResetEnabled && <p className="auth-switch"><Link to="/forgot-password">رمز عبور را فراموش کرده‌اید؟</Link></p>}
+      {isPasswordResetEnabled() && <p className="auth-switch"><Link to="/forgot-password">رمز عبور را فراموش کرده‌اید؟</Link></p>}
       <p className="auth-switch">حساب کاربری ندارید؟ <Link to="/register">ثبت‌نام کنید</Link></p>
     </AuthLayout>
   )
@@ -131,22 +153,39 @@ export function LoginPage() {
 export function ForgotPasswordPage() {
   const navigate = useNavigate()
   const [requested, setRequested] = useState(false)
+  const [isRequesting, setIsRequesting] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [message, setMessage] = useState('')
   const [serverError, setServerError] = useState('')
-  const { register, handleSubmit, getValues, formState: { errors, isSubmitting } } = useForm<ResetFields>({
+  const { register, handleSubmit, getValues, resetField, setError, trigger, formState: { errors, isSubmitting } } = useForm<ResetFields>({
     resolver: zodResolver(resetSchema),
-    defaultValues: { phone_number: '', code: '', new_password: '' },
+    defaultValues: { phone_number: '', code: '', new_password: '', confirm_password: '' },
   })
 
   const requestCode = async () => {
     setServerError('')
+    setMessage('')
+    if (!await trigger('phone_number')) return
     const phone = getValues('phone_number')
-    if (!/^09\d{9}$/.test(phone)) { setServerError('شماره تلفن معتبر وارد کنید.'); return }
+    setIsRequesting(true)
     try {
       await requestPasswordReset(phone)
       setRequested(true)
       setMessage('اگر حسابی با این شماره وجود داشته باشد، کد بازیابی ارسال می‌شود.')
-    } catch (error) { setServerError((error as Error).message) }
+    } catch (error) {
+      setServerError(getPasswordResetError(error))
+    } finally {
+      setIsRequesting(false)
+    }
+  }
+
+  const editPhoneNumber = () => {
+    setRequested(false)
+    setMessage('')
+    setServerError('')
+    resetField('code')
+    resetField('new_password')
+    resetField('confirm_password')
   }
 
   const submit = handleSubmit(async (fields) => {
@@ -154,21 +193,37 @@ export function ForgotPasswordPage() {
     try {
       await confirmPasswordReset(fields.phone_number, fields.code, fields.new_password)
       navigate('/login', { replace: true, state: { message: 'رمز عبور تغییر کرد؛ اکنون وارد شوید.' } })
-    } catch (error) { setServerError((error as Error).message) }
+    } catch (error) {
+      if (error instanceof ApiError && error.data && 'new_password' in error.data) {
+        const passwordError = error.data.new_password
+        setError('new_password', {
+          message: Array.isArray(passwordError) ? passwordError[0] : passwordError,
+        })
+        return
+      }
+      setServerError(getPasswordResetError(error))
+    }
   })
 
-  if (!passwordResetEnabled) return <Navigate to="/login" replace />
+  if (!isPasswordResetEnabled()) return <Navigate to="/login" replace />
 
   return <AuthLayout title="بازیابی رمز عبور" subtitle="کد یک‌بارمصرف به شماره ثبت‌شده ارسال می‌شود.">
     <form className="auth-form" onSubmit={submit}>
-      <Field icon={Phone} placeholder="شماره تلفن" inputMode="tel" autoComplete="tel" error={errors.phone_number?.message} {...register('phone_number')} />
-      {!requested && <button type="button" className="auth-submit" onClick={requestCode}>ارسال کد بازیابی</button>}
+      <Field icon={Phone} placeholder="شماره تلفن" inputMode="tel" autoComplete="tel" readOnly={requested} error={errors.phone_number?.message} {...register('phone_number')} />
+      {!requested && <button type="button" className="auth-submit" disabled={isRequesting} onClick={requestCode}>
+        {isRequesting ? <LoaderCircle className="spin" /> : 'ارسال کد بازیابی'}
+      </button>}
       {requested && <>
-        <Field icon={LockKeyhole} placeholder="کد ۶ رقمی" inputMode="numeric" autoComplete="one-time-code" error={errors.code?.message} {...register('code')} />
-        <Field icon={LockKeyhole} type="password" placeholder="رمز عبور جدید" autoComplete="new-password" error={errors.new_password?.message} {...register('new_password')} />
+        <button type="button" className="password-reset-edit" onClick={editPhoneNumber}>ویرایش شماره تلفن</button>
+        {message && <p className="form-success">{message}</p>}
+        <Field icon={LockKeyhole} placeholder="کد ۶ رقمی" inputMode="numeric" autoComplete="one-time-code" maxLength={6} error={errors.code?.message} {...register('code')} />
+        <div className="password-wrap">
+          <Field icon={LockKeyhole} type={showPassword ? 'text' : 'password'} placeholder="رمز عبور جدید" autoComplete="new-password" error={errors.new_password?.message} {...register('new_password')} />
+          <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label="نمایش رمز عبور جدید">{showPassword ? <EyeOff /> : <Eye />}</button>
+        </div>
+        <Field icon={LockKeyhole} type={showPassword ? 'text' : 'password'} placeholder="تکرار رمز عبور جدید" autoComplete="new-password" error={errors.confirm_password?.message} {...register('confirm_password')} />
         <button className="auth-submit" disabled={isSubmitting}>{isSubmitting ? <LoaderCircle className="spin" /> : 'تغییر رمز عبور'}</button>
       </>}
-      {message && <p className="form-success">{message}</p>}
       {serverError && <p className="form-alert">{serverError}</p>}
     </form>
     <p className="auth-switch"><Link to="/login">بازگشت به ورود</Link></p>

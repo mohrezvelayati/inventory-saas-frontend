@@ -43,6 +43,7 @@ from `/*` to `/index.html` preserves direct navigation to React Router paths.
 - RTL responsive application shell
 - Home, products, sales, requests and more pages
 - JWT authentication, registration and store onboarding
+- Two-step SMS password reset with privacy-safe responses and rate-limit handling
 - Automatic access-token refresh using session storage
 - Django API integration through TanStack Query
 - Product and variant creation
