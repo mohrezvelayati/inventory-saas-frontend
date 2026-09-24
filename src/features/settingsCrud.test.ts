@@ -13,15 +13,16 @@ describe('settings and edit API contracts', () => {
   it('patches the current user and current store', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response(JSON.stringify({ id: 1 }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 2, name: 'Store' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 2, name: 'Store', notification_email: 'owner@example.com' }), { status: 200 }))
 
     await updateCurrentUser({ username: 'user', full_name: 'User Name', phone_number: '0912' })
-    await updateCurrentStore('Store')
+    await updateCurrentStore({ name: 'Store', notification_email: 'owner@example.com' })
 
     expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/users/me/')
     expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: 'PATCH' })
     expect(fetchMock.mock.calls[1][0]).toBe('/api/v1/stores/current/')
     expect(fetchMock.mock.calls[1][1]).toMatchObject({ method: 'PATCH' })
+    expect(fetchMock.mock.calls[1][1]?.body).toBe(JSON.stringify({ name: 'Store', notification_email: 'owner@example.com' }))
   })
 
   it('patches customers and updates or deletes wanted products', async () => {

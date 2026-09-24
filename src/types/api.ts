@@ -9,12 +9,18 @@ export type PermissionCode =
   | 'view_dashboard'
   | 'manage_members'
 
-export type Store = { id: number; name: string }
+export type Store = {
+  id: number
+  name: string
+  notification_email: string
+}
+
+export type StoreSummary = Pick<Store, 'id' | 'name'>
 
 export type Membership = {
   id: number
   role: 'manager' | 'seller' | 'admin'
-  store: Store
+  store: StoreSummary
   permissions: PermissionCode[]
 }
 
@@ -106,6 +112,7 @@ export type Sale = {
   total_amount: string
   items: SaleItem[]
   created_at: string
+  completed_at: string | null
 }
 
 export type WantedProduct = {

@@ -50,6 +50,8 @@ from `/*` to `/index.html` preserves direct navigation to React Router paths.
 - Draft sale, line items and checkout flow
 - Wanted-product request creation
 - Customer, inventory, category and member management
+- Manager-configurable sale-completion notification email
+- Sale completion timestamps in sale details
 - Capability-aware navigation and route protection
 - Shared navigation, filters, cards and status components
 - Phone-bound employee invitation creation, copy, revoke and resend workflows
