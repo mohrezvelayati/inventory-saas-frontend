@@ -45,7 +45,7 @@ type ResetFields = z.infer<typeof resetSchema>
 const demoModeEnabled = import.meta.env.VITE_DEMO_MODE_ENABLED !== 'false'
 
 function isPasswordResetEnabled() {
-  return import.meta.env.VITE_PASSWORD_RESET_ENABLED === 'true'
+  return import.meta.env.VITE_PASSWORD_RESET_ENABLED !== 'false'
 }
 
 function getPasswordResetError(error: unknown) {

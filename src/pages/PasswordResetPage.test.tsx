@@ -49,12 +49,12 @@ async function reachConfirmationStep() {
 describe('password reset flow', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.stubEnv('VITE_PASSWORD_RESET_ENABLED', 'true')
+    vi.stubEnv('VITE_PASSWORD_RESET_ENABLED', '')
   })
 
   afterEach(() => vi.unstubAllEnvs())
 
-  it('shows the reset link on login when the feature is enabled', () => {
+  it('shows the reset link on login by default', () => {
     render(
       <AuthContext.Provider value={auth}>
         <MemoryRouter><LoginPage /></MemoryRouter>
