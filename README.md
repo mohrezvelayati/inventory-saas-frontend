@@ -34,7 +34,8 @@ Render builds this repository as a Vite Static Site from `main` after the
 required GitHub checks pass. The build command is `npm ci && npm run build` and
 the publish directory is `dist`. Set `VITE_API_BASE_URL` to the Render API
 including `/api/v1`, add the Sentry DSN when monitoring is enabled, and keep
-password reset disabled until the SMS provider is configured. A Render rewrite
+`VITE_PASSWORD_RESET_ENABLED=true` when the production SMS provider is configured.
+Set it explicitly to `false` only when password recovery must be hidden. A Render rewrite
 from `/*` to `/index.html` preserves direct navigation to React Router paths.
 
 ## Current status
