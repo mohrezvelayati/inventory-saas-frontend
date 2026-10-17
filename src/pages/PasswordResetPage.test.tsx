@@ -61,6 +61,9 @@ describe('password reset flow', () => {
       </AuthContext.Provider>,
     )
 
+    expect(screen.getByRole('img', { name: 'دستکت' })).toHaveAttribute('src', '/dastaket-logo-light.png')
+    expect(screen.getByText('دفتر و دستک رو ببند،')).toBeInTheDocument()
+    expect(screen.getByText('دستکـــــت رو باز کن!')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'رمز عبور را فراموش کرده‌اید؟' })).toHaveAttribute('href', '/forgot-password')
   })
 
