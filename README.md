@@ -49,7 +49,7 @@ from `/*` to `/index.html` preserves direct navigation to React Router paths.
 - Django API integration through TanStack Query
 - Product and variant creation
 - Draft sale, line items and checkout flow
-- Wanted-product request creation
+- Customer-linked wanted-product requests with per-request history
 - Customer, inventory, category and member management
 - Manager-configurable sale-completion notification email
 - Sale completion timestamps in sale details
