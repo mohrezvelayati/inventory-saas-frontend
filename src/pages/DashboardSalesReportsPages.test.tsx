@@ -133,11 +133,14 @@ describe('dashboard, sales, and reports UI', () => {
     expect(screen.queryByText('سود ناخالص')).not.toBeInTheDocument()
   })
 
-  it('places invoice items below sale information', async () => {
+  it('places add-to-invoice after customer information and before invoice items', async () => {
     renderPage(<SaleCreatePage />)
 
-    const saleDetails = await screen.findByText('اطلاعات فروش')
+    const customerDetails = await screen.findByText('اطلاعات مشتری')
+    const addToInvoice = await screen.findByRole('button', { name: /افزودن به فاکتور/ })
     const invoiceItems = screen.getByText(/اقلام فاکتور/)
-    expect(saleDetails.compareDocumentPosition(invoiceItems) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(customerDetails.compareDocumentPosition(addToInvoice) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(addToInvoice.compareDocumentPosition(invoiceItems) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.queryByText('اطلاعات فروش')).not.toBeInTheDocument()
   })
 })

@@ -62,15 +62,16 @@ export function SaleCreatePage() {
         {productsPending ? <div className="mini-loading"><LoaderCircle className="spin" /></div> : <>
           <label>محصول<select value={selection.product} onChange={(event) => setSelection({ product: event.target.value, variant: '', quantity: 1 })}><option value="">انتخاب محصول</option>{products?.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
           <div className="form-row"><label>سایز<select value={selection.variant} onChange={(event) => setSelection((current) => ({ ...current, variant: event.target.value }))}><option value="">انتخاب سایز</option>{selectedProduct?.variants.map((variant) => <option key={variant.id} value={variant.id}>{variant.size} — موجودی {variant.current_stock.toLocaleString('fa-IR')}</option>)}</select></label><label>تعداد<input type="number" min="1" value={selection.quantity} onChange={(event) => setSelection((current) => ({ ...current, quantity: Math.max(1, Number(event.target.value)) }))} /></label></div>
-          <button className="secondary-button" onClick={addToCart}><Plus /> افزودن به فاکتور</button>
         </>}
       </section>
 
       <section className="sale-details card">
-        <h3>اطلاعات فروش</h3>
+        <h3>اطلاعات مشتری</h3>
         <label>مشتری (اختیاری)<select value={customer} onChange={(event) => setCustomer(event.target.value)}><option value="">بدون مشتری</option>{customers?.map((item) => <option key={item.id} value={item.id}>{item.full_name} — {item.phone_number}</option>)}</select></label>
         <div className="form-row"><label>کانال فروش<select value={channel} onChange={(event) => setChannel(event.target.value as Sale['channel'])}><option value="store">حضوری</option><option value="instagram">اینستاگرام</option><option value="website">وب‌سایت</option><option value="referral">معرفی</option><option value="other">سایر</option></select></label><label>روش پرداخت<select value={payment} onChange={(event) => setPayment(event.target.value as Sale['payment_method'])}><option value="card">کارت پوز</option><option value="cash">نقد</option><option value="online">آنلاین</option></select></label></div>
       </section>
+
+      {!productsPending && <button type="button" className="secondary-button" onClick={addToCart}><Plus /> افزودن به فاکتور</button>}
 
       <section className="cart-section">
         <h3>اقلام فاکتور <span>{cart.length.toLocaleString('fa-IR')}</span></h3>
