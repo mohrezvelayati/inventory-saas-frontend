@@ -119,9 +119,10 @@ export function SaleDetailPage() {
   if (isPending) return <DetailLoading />
   if (isError || !sale) return <div className="error-state home-loading"><ShoppingBag /><strong>فروش پیدا نشد</strong></div>
   const meta = saleStatus[sale.status]
+  const title = sale.sale_number === null ? 'پیش‌نویس فروش' : `فروش #${sale.sale_number.toLocaleString('fa-IR')}`
 
   return <div className="page detail-page">
-    <div className="subpage-heading"><Link to="/sales"><ArrowRight /></Link><div><h2>فروش #{sale.id.toLocaleString('fa-IR')}</h2><p>{new Date(sale.created_at).toLocaleString('fa-IR')}</p></div></div>
+    <div className="subpage-heading"><Link to="/sales"><ArrowRight /></Link><div><h2>{title}</h2><p>{new Date(sale.created_at).toLocaleString('fa-IR')}</p></div></div>
     <section className="sale-total card"><ShoppingBag /><div><span>مبلغ نهایی</span><strong>{Number(sale.total_amount).toLocaleString('fa-IR')} <small>تومان</small></strong></div><StatusBadge tone={meta.tone}>{meta.label}</StatusBadge></section>
     <section className="invoice-items"><h3>اقلام فاکتور</h3>{sale.items.map((item) => <article className="invoice-row card" key={item.id}><span className="product-visual compact">👟</span><div><strong>{item.product_name}</strong><small>سایز {item.size} · تعداد {item.quantity.toLocaleString('fa-IR')}</small></div><span><strong>{Number(item.final_price).toLocaleString('fa-IR')}</strong><small>تومان</small></span></article>)}</section>
     <section className="sale-meta card"><div><span>کانال فروش</span><strong>{sale.channel}</strong></div><div><span>روش پرداخت</span><strong>{sale.payment_method}</strong></div><div><span>مشتری</span><strong>{sale.customer ? `#${sale.customer.toLocaleString('fa-IR')}` : 'بدون مشتری'}</strong></div></section>
