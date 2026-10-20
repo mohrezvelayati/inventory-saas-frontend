@@ -39,6 +39,7 @@ const completedSale: Sale = {
   id: 12,
   sale_number: 3,
   customer: null,
+  customer_name: null,
   channel: 'store',
   payment_method: 'card',
   status: 'completed',
