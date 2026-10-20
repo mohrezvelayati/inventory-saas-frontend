@@ -105,6 +105,7 @@ export type SaleItem = {
 
 export type Sale = {
   id: number
+  sale_number: number | null
   customer: number | null
   channel: 'store' | 'instagram' | 'website' | 'referral' | 'other'
   payment_method: 'cash' | 'card' | 'online'

@@ -7,6 +7,7 @@ import { getDashboard, getReports } from '../features/dashboard/dashboardApi'
 import { getAllCustomers } from '../features/customers/customersApi'
 import { getAllProducts } from '../features/products/productApi'
 import { getSales } from '../features/sales/salesApi'
+import type { Sale } from '../types/api'
 import { HomePage } from './HomePage'
 import { ReportsPage } from './ReportsPage'
 import { SaleCreatePage } from './SaleCreatePage'
@@ -32,6 +33,27 @@ const report = {
   channels: [],
   products: [],
   inventory: { total_variants: 3, total_stock: 9, low_stock_count: 0, out_of_stock_count: 0, purchase_value: '3000', retail_value: '5000' },
+}
+
+const completedSale: Sale = {
+  id: 12,
+  sale_number: 3,
+  customer: null,
+  channel: 'store',
+  payment_method: 'card',
+  status: 'completed',
+  total_amount: '5800000',
+  items: [],
+  created_at: '2026-09-24T08:00:00Z',
+  completed_at: '2026-09-24T08:15:00Z',
+}
+
+const draftSale: Sale = {
+  ...completedSale,
+  id: 13,
+  sale_number: null,
+  status: 'draft',
+  completed_at: null,
 }
 
 function renderPage(page: React.ReactNode, withAuth = false) {
@@ -87,6 +109,16 @@ describe('dashboard, sales, and reports UI', () => {
     expect(screen.getByRole('link', { name: /ثبت فروش جدید/ })).toBeInTheDocument()
   })
 
+  it('shows store sale numbers while keeping internal ids in links', async () => {
+    vi.mocked(getSales).mockResolvedValueOnce({ count: 2, next: null, previous: null, results: [completedSale, draftSale] })
+    renderPage(<SalesPage />)
+
+    const completedLink = await screen.findByRole('link', { name: /فروش #۳/ })
+    expect(completedLink).toHaveAttribute('href', '/sales/12')
+    expect(screen.queryByText('فروش #۱۲')).not.toBeInTheDocument()
+    expect(screen.getByText('پیش‌نویس فروش')).toBeInTheDocument()
+  })
+
   it('adds a today report preset and labels gross profit as profit', async () => {
     renderPage(<ReportsPage />)
 
@@ -101,11 +133,14 @@ describe('dashboard, sales, and reports UI', () => {
     expect(screen.queryByText('سود ناخالص')).not.toBeInTheDocument()
   })
 
-  it('places invoice items below sale information', async () => {
+  it('places add-to-invoice after customer information and before invoice items', async () => {
     renderPage(<SaleCreatePage />)
 
-    const saleDetails = await screen.findByText('اطلاعات فروش')
+    const customerDetails = await screen.findByText('اطلاعات مشتری')
+    const addToInvoice = await screen.findByRole('button', { name: /افزودن به فاکتور/ })
     const invoiceItems = screen.getByText(/اقلام فاکتور/)
-    expect(saleDetails.compareDocumentPosition(invoiceItems) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(customerDetails.compareDocumentPosition(addToInvoice) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(addToInvoice.compareDocumentPosition(invoiceItems) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.queryByText('اطلاعات فروش')).not.toBeInTheDocument()
   })
 })
