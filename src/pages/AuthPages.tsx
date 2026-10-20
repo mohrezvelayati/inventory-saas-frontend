@@ -66,7 +66,15 @@ function getPasswordResetError(error: unknown) {
 export function AuthLayout({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
     <main className="auth-page" dir="rtl">
-      <div className="auth-brand"><span><Store /></span><div><strong>انبارینو</strong><small>مدیریت هوشمند فروشگاه</small></div></div>
+      <div className="auth-brand">
+        <span className="auth-brand-logo">
+          <img src="/dastaket-logo-light.png" alt="دستکت" />
+        </span>
+        <p>
+          <span>دفتر و دستک رو ببند،</span>
+          <span>دستکـــــت رو باز کن!</span>
+        </p>
+      </div>
       <section className="auth-card">
         <header><h1>{title}</h1><p>{subtitle}</p></header>
         {children}
@@ -279,7 +287,7 @@ export function StoreSetupPage() {
     <AuthLayout title="فروشگاهت را بساز" subtitle="این نام در بالای پنل و گزارش‌ها نمایش داده می‌شود.">
       <div className="onboarding-icon"><Store /></div>
       <form className="auth-form" onSubmit={submit}>
-        <Field icon={Store} placeholder="مثلاً کتونی لند" autoFocus error={errors.name?.message} {...register('name')} />
+        <Field icon={Store} placeholder="مثلاً فروشگاه من" autoFocus error={errors.name?.message} {...register('name')} />
         {serverError && <p className="form-alert">{serverError}</p>}
         <button className="auth-submit" disabled={isSubmitting}>{isSubmitting ? <LoaderCircle className="spin" /> : <>ساخت فروشگاه و ورود <ArrowLeft /></>}</button>
       </form>
