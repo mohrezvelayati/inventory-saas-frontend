@@ -128,6 +128,16 @@ export type WantedProduct = {
   created_at: string
 }
 
+export type WantedCustomerRequest = {
+  id: number
+  customer: number | null
+  customer_name: string | null
+  customer_phone_number: string | null
+  created_by: number | null
+  created_by_name: string | null
+  created_at: string
+}
+
 export type Dashboard = {
   sales: { orders_count: number; revenue: string; discount: string }
   inventory: { total_variants: number; total_stock: number }

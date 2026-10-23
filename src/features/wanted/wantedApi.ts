@@ -1,5 +1,5 @@
 import { apiRequest } from '../../lib/api'
-import type { PaginatedResponse, WantedProduct } from '../../types/api'
+import type { PaginatedResponse, WantedCustomerRequest, WantedProduct } from '../../types/api'
 
 export type WantedListFilters = {
   search?: string
@@ -20,11 +20,15 @@ export function getWantedProducts({ search = '', page = 1, minCount = '', produc
   return apiRequest<PaginatedResponse<WantedProduct>>(`/wanted/?${params}`)
 }
 
-export type CreateWantedInput = {
+export type WantedInput = {
   product?: number | null
   product_name: string
   brand: string
   size: string
+}
+
+export type CreateWantedInput = WantedInput & {
+  customer: number
 }
 
 export function createWantedProduct(input: CreateWantedInput) {
@@ -34,7 +38,7 @@ export function createWantedProduct(input: CreateWantedInput) {
   })
 }
 
-export function updateWantedProduct(id: number, input: CreateWantedInput) {
+export function updateWantedProduct(id: number, input: WantedInput) {
   return apiRequest<WantedProduct>(`/wanted/${id}/`, {
     method: 'PATCH',
     body: JSON.stringify(input),
@@ -43,4 +47,8 @@ export function updateWantedProduct(id: number, input: CreateWantedInput) {
 
 export function deleteWantedProduct(id: number) {
   return apiRequest<void>(`/wanted/${id}/`, { method: 'DELETE' })
+}
+
+export function getWantedCustomerRequests(wantedId: number, page = 1) {
+  return apiRequest<PaginatedResponse<WantedCustomerRequest>>(`/wanted/${wantedId}/requests/?page=${page}`)
 }
