@@ -1,11 +1,18 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { LoaderCircle, Minus, PackagePlus, Plus, Trash2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { MoneyInWords } from '../../components/UI'
 import { ApiError } from '../../lib/api'
 import type { BatchPurchaseInput, BatchPurchaseResponse, Product } from '../../types/api'
 import { createBatchPurchase } from './inventoryApi'
 
-const READY_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'] as const
+const SIZE_GROUPS = [
+  { id: 'sneakers', label: 'کتونی', sizes: ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'] },
+  { id: 'pants', label: 'شلوار', sizes: ['24', '25', '26', '27', '28', '30', '32', '34', '36', '38', '40'] },
+  { id: 'clothing', label: 'لباس', sizes: ['S', 'M', 'X', 'XL', 'XXL'] },
+] as const
+
+type SizeGroupId = typeof SIZE_GROUPS[number]['id']
 
 type Props = {
   products: Product[]
@@ -40,17 +47,19 @@ function getBatchPurchaseError(error: unknown) {
 export function BatchPurchaseModal({ products, onClose, onSuccess }: Props) {
   const queryClient = useQueryClient()
   const [productId, setProductId] = useState('')
+  const [sizeGroupId, setSizeGroupId] = useState<SizeGroupId | ''>('')
   const [quantities, setQuantities] = useState<Record<string, number>>({})
   const [purchasePrice, setPurchasePrice] = useState('')
   const [salePrice, setSalePrice] = useState('')
   const [note, setNote] = useState('')
   const [error, setError] = useState('')
   const selectedProduct = products.find((product) => product.id === Number(productId))
+  const readySizes = SIZE_GROUPS.find((group) => group.id === sizeGroupId)?.sizes ?? []
   const variantsBySize = useMemo(
     () => new Map((selectedProduct?.variants ?? []).map((variant) => [variant.size, variant])),
     [selectedProduct],
   )
-  const selectedItems = READY_SIZES
+  const selectedItems = readySizes
     .filter((size) => (quantities[size] ?? 0) > 0)
     .map((size) => ({ size, quantity: quantities[size] }))
   const hasNewSize = selectedItems.some((item) => !variantsBySize.has(item.size))
@@ -74,10 +83,18 @@ export function BatchPurchaseModal({ products, onClose, onSuccess }: Props) {
     const product = products.find((item) => item.id === Number(value))
     const latestVariant = [...(product?.variants ?? [])].sort((a, b) => b.id - a.id)[0]
     setProductId(value)
+    setSizeGroupId('')
     setQuantities({})
     setPurchasePrice(latestVariant?.purchase_price ?? '')
     setSalePrice(latestVariant?.sale_price ?? '')
     setNote('')
+    setError('')
+    mutation.reset()
+  }
+
+  const chooseSizeGroup = (value: SizeGroupId) => {
+    setSizeGroupId(value)
+    setQuantities({})
     setError('')
     mutation.reset()
   }
@@ -143,8 +160,14 @@ export function BatchPurchaseModal({ products, onClose, onSuccess }: Props) {
         <form className="modal-form" onSubmit={submit} noValidate>
           <label>محصول *<select value={productId} onChange={(event) => chooseProduct(event.target.value)} autoFocus><option value="">انتخاب محصول</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
 
-          {selectedProduct && <section className="batch-size-section" aria-label="سایزهای آماده">
-            <div className="batch-size-grid">{READY_SIZES.map((size) => {
+          {selectedProduct && <section className="batch-size-group-section" aria-label="دسته‌بندی سایز">
+            <strong>دسته‌بندی محصول *</strong>
+            <div className="batch-size-group-tabs">{SIZE_GROUPS.map((group) => <button type="button" className={sizeGroupId === group.id ? 'active' : ''} key={group.id} onClick={() => chooseSizeGroup(group.id)} aria-pressed={sizeGroupId === group.id} aria-label={`انتخاب دسته ${group.label}`}>{group.label}</button>)}</div>
+            {!sizeGroupId && <small>برای نمایش سایزها، دسته‌بندی محصول را انتخاب کنید.</small>}
+          </section>}
+
+          {selectedProduct && sizeGroupId && <section className="batch-size-section" aria-label="سایزهای آماده">
+            <div className="batch-size-grid">{readySizes.map((size) => {
               const variant = variantsBySize.get(size)
               const quantity = quantities[size] ?? 0
               return <button type="button" className={`batch-size-button ${quantity > 0 ? 'selected' : ''}`} key={size} onClick={() => changeQuantity(size, 1)} aria-label={`افزایش سایز ${size}`}>
@@ -168,7 +191,7 @@ export function BatchPurchaseModal({ products, onClose, onSuccess }: Props) {
             </div>)}
           </section>}
 
-          {hasNewSize && <div className="form-row"><label>قیمت خرید مشترک *<input type="number" min="0" value={purchasePrice} onChange={(event) => { mutation.reset(); setError(''); setPurchasePrice(event.target.value) }} /></label><label>قیمت فروش مشترک *<input type="number" min="0" value={salePrice} onChange={(event) => { mutation.reset(); setError(''); setSalePrice(event.target.value) }} /></label></div>}
+          {hasNewSize && <div className="form-row"><label>قیمت خرید مشترک *<input aria-label="قیمت خرید مشترک *" type="number" min="0" value={purchasePrice} onChange={(event) => { mutation.reset(); setError(''); setPurchasePrice(event.target.value) }} /><MoneyInWords value={purchasePrice} /></label><label>قیمت فروش مشترک *<input aria-label="قیمت فروش مشترک *" type="number" min="0" value={salePrice} onChange={(event) => { mutation.reset(); setError(''); setSalePrice(event.target.value) }} /><MoneyInWords value={salePrice} /></label></div>}
           <label>یادداشت<input value={note} onChange={(event) => { mutation.reset(); setError(''); setNote(event.target.value) }} placeholder="مثلاً محموله جدید" /></label>
           {error && <p className="form-alert">{error}</p>}
           <button className="primary-button" disabled={selectedItems.length === 0 || mutation.isPending}>{mutation.isPending ? <LoaderCircle className="spin" /> : <PackagePlus />} ثبت همه</button>

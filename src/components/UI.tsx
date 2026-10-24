@@ -1,6 +1,12 @@
 import type { LucideIcon } from 'lucide-react'
 import { ChevronDown, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { formatTomanInWords } from '../lib/persianMoney'
+
+export function MoneyInWords({ value }: { value: string | number }) {
+  const words = formatTomanInWords(value)
+  return words ? <small className="money-in-words" aria-live="polite">{words}</small> : null
+}
 
 export function SearchBox({
   placeholder,

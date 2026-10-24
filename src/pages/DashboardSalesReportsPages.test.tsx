@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthContext, type AuthContextValue } from '../features/auth/auth-context'
@@ -143,5 +143,25 @@ describe('dashboard, sales, and reports UI', () => {
     expect(customerDetails.compareDocumentPosition(addToInvoice) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(addToInvoice.compareDocumentPosition(invoiceItems) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(screen.queryByText('اطلاعات فروش')).not.toBeInTheDocument()
+  })
+
+  it('shows the entered discount in Persian words', async () => {
+    vi.mocked(getAllProducts).mockResolvedValueOnce([{
+      id: 1,
+      name: 'Air Max',
+      description: '',
+      categories: [],
+      created_at: '',
+      updated_at: '',
+      variants: [{ id: 4, size: '40', purchase_price: '4000000', sale_price: '5800000', current_stock: 2 }],
+    }])
+    renderPage(<SaleCreatePage />)
+
+    fireEvent.change(await screen.findByLabelText('محصول'), { target: { value: '1' } })
+    fireEvent.change(screen.getByLabelText('سایز'), { target: { value: '4' } })
+    fireEvent.click(screen.getByRole('button', { name: /افزودن به فاکتور/ }))
+    fireEvent.change(screen.getByLabelText('تخفیف'), { target: { value: '1000000' } })
+
+    expect(screen.getByText('یک میلیون تومان')).toBeInTheDocument()
   })
 })

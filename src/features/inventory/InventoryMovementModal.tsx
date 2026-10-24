@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { LoaderCircle, PackagePlus, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { MoneyInWords } from '../../components/UI'
 import type { Product, ProductVariant } from '../../types/api'
 import { createInventoryEntry, MovementFailedAfterVariantCreationError, type InventoryEntryInput } from './inventoryApi'
 
@@ -115,7 +116,7 @@ export function InventoryMovementModal({ products, canCreateVariant, onClose }: 
           <label>محصول *<select value={form.product} onChange={(event) => chooseProduct(event.target.value)} autoFocus><option value="">انتخاب محصول</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
           <label>سایز *<select value={form.variant} disabled={!selectedProduct} onChange={(event) => chooseVariant(event.target.value)}><option value="">انتخاب سایز</option>{variants.map((variant) => <option key={variant.id} value={variant.id}>سایز {variant.size} — موجودی {variant.current_stock.toLocaleString('fa-IR')}</option>)}{canCreateVariant && selectedProduct && <option value={NEW_VARIANT}>افزودن سایز جدید</option>}</select></label>
           {selectedProduct && !canCreateVariant && variants.length === 0 && <p className="form-alert">این محصول هنوز سایزی ندارد و حساب شما مجوز ساخت سایز جدید را ندارد.</p>}
-          {form.variant === NEW_VARIANT && <><label>سایز جدید *<input value={form.size} onChange={(event) => setForm({ ...form, size: event.target.value })} placeholder="مثلاً ۴۰" /></label><div className="form-row"><label>قیمت خرید *<input type="number" min="0" value={form.purchase_price} onChange={(event) => setForm({ ...form, purchase_price: event.target.value })} /></label><label>قیمت فروش *<input type="number" min="0" value={form.sale_price} onChange={(event) => setForm({ ...form, sale_price: event.target.value })} /></label></div></>}
+          {form.variant === NEW_VARIANT && <><label>سایز جدید *<input value={form.size} onChange={(event) => setForm({ ...form, size: event.target.value })} placeholder="مثلاً ۴۰" /></label><div className="form-row"><label>قیمت خرید *<input aria-label="قیمت خرید *" type="number" min="0" value={form.purchase_price} onChange={(event) => setForm({ ...form, purchase_price: event.target.value })} /><MoneyInWords value={form.purchase_price} /></label><label>قیمت فروش *<input aria-label="قیمت فروش *" type="number" min="0" value={form.sale_price} onChange={(event) => setForm({ ...form, sale_price: event.target.value })} /><MoneyInWords value={form.sale_price} /></label></div></>}
           <div className="form-row"><label>نوع حرکت<select value={form.movement_type} onChange={(event) => setForm({ ...form, movement_type: event.target.value as 'purchase' | 'adjustment' })}><option value="purchase">ورود خرید</option><option value="adjustment">اصلاح موجودی</option></select></label><label>تعداد *<input type="number" value={form.quantity} onChange={(event) => setForm({ ...form, quantity: event.target.value })} placeholder={form.movement_type === 'adjustment' ? 'مثبت یا منفی' : 'مثبت'} /></label></div>
           <label>یادداشت<input value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} /></label>
           {error && <p className="form-alert">{error}</p>}

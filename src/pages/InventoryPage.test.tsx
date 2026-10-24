@@ -101,6 +101,7 @@ describe('InventoryPage batch purchase prototype access', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /ورود گروهی خرید/ }))
     fireEvent.change(screen.getByLabelText('محصول *'), { target: { value: '2' } })
+    fireEvent.click(screen.getByRole('button', { name: 'انتخاب دسته کتونی' }))
     fireEvent.click(screen.getByRole('button', { name: 'افزایش سایز 40' }))
     fireEvent.click(screen.getByRole('button', { name: 'ثبت همه' }))
 

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, LoaderCircle, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { MoneyInWords } from '../components/UI'
 import { getAllCustomers } from '../features/customers/customersApi'
 import { getAllProducts } from '../features/products/productApi'
 import { addSaleItem, completeSale, createDraftSale, deleteDraftSale } from '../features/sales/salesApi'
@@ -77,7 +78,7 @@ export function SaleCreatePage() {
         <h3>اقلام فاکتور <span>{cart.length.toLocaleString('fa-IR')}</span></h3>
         {cart.length === 0 ? <div className="empty-cart card"><ShoppingBag /><span>هنوز کالایی اضافه نشده است.</span></div> : cart.map((item) => (
           <article className="cart-item card" key={item.variant.id}>
-            <span className="product-visual">👟</span><div><strong>{item.productName}</strong><small>سایز {item.variant.size} · {Number(item.variant.sale_price).toLocaleString('fa-IR')} تومان</small><label>تخفیف<input type="number" min="0" value={item.discount} onChange={(event) => setCart((current) => current.map((cartItem) => cartItem.variant.id === item.variant.id ? { ...cartItem, discount: Number(event.target.value) } : cartItem))} /></label></div>
+            <span className="product-visual">👟</span><div><strong>{item.productName}</strong><small>سایز {item.variant.size} · {Number(item.variant.sale_price).toLocaleString('fa-IR')} تومان</small><label>تخفیف<input aria-label={`تخفیف ${item.productName}`} type="number" min="0" value={item.discount} onChange={(event) => setCart((current) => current.map((cartItem) => cartItem.variant.id === item.variant.id ? { ...cartItem, discount: Number(event.target.value) } : cartItem))} /><MoneyInWords value={item.discount || ''} /></label></div>
             <div className="quantity-control"><button onClick={() => setCart((current) => current.map((cartItem) => cartItem.variant.id === item.variant.id ? { ...cartItem, quantity: Math.max(1, cartItem.quantity - 1) } : cartItem))}><Minus /></button><b>{item.quantity.toLocaleString('fa-IR')}</b><button onClick={() => setCart((current) => current.map((cartItem) => cartItem.variant.id === item.variant.id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem))}><Plus /></button><button className="remove" onClick={() => setCart((current) => current.filter((cartItem) => cartItem.variant.id !== item.variant.id))}><Trash2 /></button></div>
           </article>
         ))}
