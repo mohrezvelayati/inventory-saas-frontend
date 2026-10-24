@@ -199,6 +199,12 @@
 
 .operation-page { gap: 14px; }.operation-summary { min-height: 82px; padding: 14px 18px; display: flex; align-items: center; gap: 13px; }.operation-summary > svg { width: 42px; height: 42px; padding: 9px; color: var(--primary); background: var(--primary-soft); border-radius: 12px; }.operation-summary > div { display: flex; flex-direction: column; }.operation-summary strong { font-size: 20px; }.operation-summary span { font-size: 9px; color: var(--muted); }.simple-list { display: flex; flex-direction: column; gap: 8px; }.simple-row { min-height: 72px; padding: 10px 13px; display: grid; grid-template-columns: 44px 1fr auto; gap: 11px; align-items: center; }.simple-row > div { display: flex; flex-direction: column; gap: 3px; }.simple-row strong { font-size: 12px; }.simple-row small { color: var(--muted); font-size: 9px; }.initial-avatar { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; color: var(--primary); background: var(--primary-soft); font-weight: 800; }.row-delete { width: 34px; height: 34px; border: 0; border-radius: 9px; display: grid; place-items: center; color: var(--red); background: #fff4f4; }.row-delete svg { width: 16px; }.product-visual.compact { width: 44px; height: 44px; font-size: 24px; }
 .batch-purchase-modal .primary-button:disabled { opacity: .55; box-shadow: none; cursor: not-allowed; }
+.batch-size-group-section { display: flex; flex-direction: column; gap: 8px; }
+.batch-size-group-section > strong { font-size: 10px; }
+.batch-size-group-section > small { color: var(--muted); font-size: 8px; }
+.batch-size-group-tabs { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; }
+.batch-size-group-tabs button { height: 38px; border: 1px solid var(--line); border-radius: 11px; color: var(--muted); background: white; font-size: 10px; font-weight: 700; }
+.batch-size-group-tabs button.active { color: white; border-color: var(--primary); background: var(--primary); }
 .batch-size-section { display: flex; flex-direction: column; gap: 8px; }
 .batch-size-grid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 7px; }
 .batch-size-button { min-height: 67px; padding: 8px 3px; position: relative; border: 1px solid var(--line); border-radius: 12px; color: var(--text); background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }

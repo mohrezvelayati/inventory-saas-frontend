@@ -53,14 +53,38 @@ function renderModal(onSuccess = vi.fn()) {
   return { queryClient, onSuccess }
 }
 
-function selectAirMax() {
+function selectAirMax(sizeGroup: 'کتونی' | 'شلوار' | 'لباس' = 'کتونی') {
   fireEvent.change(screen.getByLabelText('محصول *'), { target: { value: '2' } })
+  fireEvent.click(screen.getByRole('button', { name: `انتخاب دسته ${sizeGroup}` }))
 }
 
 describe('BatchPurchaseModal', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(createBatchPurchase).mockResolvedValue(response)
+  })
+
+  it('shows no default sizes and opens the sizes for the selected product category', () => {
+    renderModal()
+    fireEvent.change(screen.getByLabelText('محصول *'), { target: { value: '2' } })
+
+    expect(screen.getByRole('button', { name: 'انتخاب دسته کتونی' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'انتخاب دسته شلوار' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'انتخاب دسته لباس' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'افزایش سایز 40' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'انتخاب دسته شلوار' }))
+    expect(screen.getByRole('button', { name: 'افزایش سایز 24' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'افزایش سایز 40' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'افزایش سایز 29' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'افزایش سایز 24' }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'انتخاب دسته لباس' }))
+    for (const size of ['S', 'M', 'X', 'XL', 'XXL']) {
+      expect(screen.getByRole('button', { name: `افزایش سایز ${size}` })).toBeInTheDocument()
+    }
+    expect(screen.queryByLabelText('انتخاب سایز 24')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'ثبت همه' })).toBeDisabled()
   })
 
   it('keeps submit disabled without selection and identifies existing and new sizes', () => {
