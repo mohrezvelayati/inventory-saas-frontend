@@ -131,6 +131,8 @@ describe('BatchPurchaseModal', () => {
     fireEvent.click(screen.getByRole('button', { name: 'افزایش سایز 42' }))
     expect(screen.getByLabelText('قیمت خرید مشترک *')).toHaveValue(1100)
     expect(screen.getByLabelText('قیمت فروش مشترک *')).toHaveValue(1700)
+    expect(screen.getByText('یک هزار و صد تومان')).toBeInTheDocument()
+    expect(screen.getByText('یک هزار و هفتصد تومان')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'حذف سایز 42' }))
     expect(screen.queryByLabelText('قیمت خرید مشترک *')).not.toBeInTheDocument()

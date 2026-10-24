@@ -95,6 +95,7 @@ describe('ProductDetailPage bulk sale-price update', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /تغییر قیمت همه سایزها/ }))
     fireEvent.change(screen.getByLabelText('قیمت فروش جدید (تومان) *'), { target: { value: '5800000' } })
+    expect(screen.getByText('پنج میلیون و هشتصد هزار تومان')).toBeInTheDocument()
     const submitButton = screen.getByRole('button', { name: /اعمال قیمت برای همه سایزها/ })
     fireEvent.click(submitButton)
 

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, Ban, Box, CheckCircle2, LoaderCircle, PackagePlus, Save, ShoppingBag, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { StatusBadge } from '../components/UI'
+import { MoneyInWords, StatusBadge } from '../components/UI'
 import { createVariant, deleteProduct, deleteVariant, getProduct, updateProduct, updateProductSalePrice } from '../features/products/productApi'
 import { useAuth } from '../features/auth/useAuth'
 import { ApiError } from '../lib/api'
@@ -41,7 +41,7 @@ function ProductEditor({ product, priceMessage, onPriceUpdated }: { product: Pro
     {priceMessage && <p className="form-success"><CheckCircle2 />{priceMessage}</p>}
     <section className="detail-form card"><h3>اطلاعات محصول</h3><label>نام محصول<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label><label>توضیحات<textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label><button className="secondary-button" onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}><Save /> ذخیره تغییرات</button></section>
     <section className="variant-section"><h3>سایزها</h3>{canManageCatalog && product.variants.length > 0 && <button className="secondary-button" onClick={() => setPriceModalOpen(true)}><Save /> تغییر قیمت همه سایزها</button>}{product.variants.map((item) => <article className="variant-row card" key={item.id}><span><strong>سایز {item.size}</strong><small>موجودی {item.current_stock.toLocaleString('fa-IR')}</small></span><span><strong>{Number(item.sale_price).toLocaleString('fa-IR')}</strong><small>تومان</small></span><button onClick={() => window.confirm('این سایز حذف شود؟') && deleteVariantMutation.mutate(item.id)}><Trash2 /></button></article>)}</section>
-    <section className="detail-form card"><h3>افزودن سایز</h3><div className="form-row"><label>سایز<input value={variant.size} onChange={(event) => setVariant({ ...variant, size: event.target.value })} /></label><label>قیمت خرید<input type="number" value={variant.purchase_price} onChange={(event) => setVariant({ ...variant, purchase_price: event.target.value })} /></label></div><label>قیمت فروش<input type="number" value={variant.sale_price} onChange={(event) => setVariant({ ...variant, sale_price: event.target.value })} /></label><button className="secondary-button" onClick={() => { if (!variant.size || !variant.purchase_price || !variant.sale_price) { setError('اطلاعات سایز را کامل کنید.'); return } variantMutation.mutate() }}><PackagePlus /> افزودن سایز</button></section>
+    <section className="detail-form card"><h3>افزودن سایز</h3><div className="form-row"><label>سایز<input value={variant.size} onChange={(event) => setVariant({ ...variant, size: event.target.value })} /></label><label>قیمت خرید<input aria-label="قیمت خرید" type="number" value={variant.purchase_price} onChange={(event) => setVariant({ ...variant, purchase_price: event.target.value })} /><MoneyInWords value={variant.purchase_price} /></label></div><label>قیمت فروش<input aria-label="قیمت فروش" type="number" value={variant.sale_price} onChange={(event) => setVariant({ ...variant, sale_price: event.target.value })} /><MoneyInWords value={variant.sale_price} /></label><button className="secondary-button" onClick={() => { if (!variant.size || !variant.purchase_price || !variant.sale_price) { setError('اطلاعات سایز را کامل کنید.'); return } variantMutation.mutate() }}><PackagePlus /> افزودن سایز</button></section>
     {error && <p className="form-alert">{error}</p>}
     <button className="danger-button" onClick={() => window.confirm('محصول و تمام سایزهای آن حذف شوند؟') && deleteMutation.mutate()}><Trash2 /> حذف محصول</button>
     {priceModalOpen && <BulkSalePriceModal product={product} onClose={() => setPriceModalOpen(false)} onSuccess={onPriceUpdated} />}
@@ -98,7 +98,7 @@ function BulkSalePriceModal({ product, onClose, onSuccess }: { product: Product;
     <section className="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="bulk-price-title">
       <header><div><h2 id="bulk-price-title">تغییر قیمت همه سایزها</h2><p>قیمت فروش تمام {product.variants.length.toLocaleString('fa-IR')} سایز «{product.name}» تغییر می‌کند؛ قیمت خرید بدون تغییر می‌ماند.</p></div><button type="button" onClick={close} disabled={mutation.isPending} aria-label="بستن"><X /></button></header>
       <form className="modal-form" onSubmit={submit} noValidate>
-        <label>قیمت فروش جدید (تومان) *<input type="number" min="0" step="1" inputMode="numeric" value={salePrice} onChange={(event) => setSalePrice(event.target.value)} autoFocus /></label>
+        <label>قیمت فروش جدید (تومان) *<input aria-label="قیمت فروش جدید (تومان) *" type="number" min="0" step="1" inputMode="numeric" value={salePrice} onChange={(event) => setSalePrice(event.target.value)} autoFocus /><MoneyInWords value={salePrice} /></label>
         {error && <p className="form-alert">{error}</p>}
         <button className="primary-button" disabled={mutation.isPending}>{mutation.isPending ? <LoaderCircle className="spin" /> : <Save />} اعمال قیمت برای همه سایزها</button>
       </form>

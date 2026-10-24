@@ -51,5 +51,10 @@ describe('InventoryMovementModal', () => {
 
     expect(screen.getByLabelText('قیمت خرید *')).toHaveValue(1100)
     expect(screen.getByLabelText('قیمت فروش *')).toHaveValue(1700)
+    expect(screen.getByText('یک هزار و صد تومان')).toBeInTheDocument()
+    expect(screen.getByText('یک هزار و هفتصد تومان')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('قیمت خرید *'), { target: { value: '1000000' } })
+    expect(screen.getByText('یک میلیون تومان')).toBeInTheDocument()
   })
 })

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { LoaderCircle, Minus, PackagePlus, Plus, Trash2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { MoneyInWords } from '../../components/UI'
 import { ApiError } from '../../lib/api'
 import type { BatchPurchaseInput, BatchPurchaseResponse, Product } from '../../types/api'
 import { createBatchPurchase } from './inventoryApi'
@@ -190,7 +191,7 @@ export function BatchPurchaseModal({ products, onClose, onSuccess }: Props) {
             </div>)}
           </section>}
 
-          {hasNewSize && <div className="form-row"><label>قیمت خرید مشترک *<input type="number" min="0" value={purchasePrice} onChange={(event) => { mutation.reset(); setError(''); setPurchasePrice(event.target.value) }} /></label><label>قیمت فروش مشترک *<input type="number" min="0" value={salePrice} onChange={(event) => { mutation.reset(); setError(''); setSalePrice(event.target.value) }} /></label></div>}
+          {hasNewSize && <div className="form-row"><label>قیمت خرید مشترک *<input aria-label="قیمت خرید مشترک *" type="number" min="0" value={purchasePrice} onChange={(event) => { mutation.reset(); setError(''); setPurchasePrice(event.target.value) }} /><MoneyInWords value={purchasePrice} /></label><label>قیمت فروش مشترک *<input aria-label="قیمت فروش مشترک *" type="number" min="0" value={salePrice} onChange={(event) => { mutation.reset(); setError(''); setSalePrice(event.target.value) }} /><MoneyInWords value={salePrice} /></label></div>}
           <label>یادداشت<input value={note} onChange={(event) => { mutation.reset(); setError(''); setNote(event.target.value) }} placeholder="مثلاً محموله جدید" /></label>
           {error && <p className="form-alert">{error}</p>}
           <button className="primary-button" disabled={selectedItems.length === 0 || mutation.isPending}>{mutation.isPending ? <LoaderCircle className="spin" /> : <PackagePlus />} ثبت همه</button>
