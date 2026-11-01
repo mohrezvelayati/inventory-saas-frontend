@@ -29,8 +29,19 @@ const products: Product[] = [
     created_at: '',
     updated_at: '',
     variants: [
-      { id: 4, size: '40', purchase_price: '900', sale_price: '1400', current_stock: 1 },
-      { id: 7, size: '41', purchase_price: '1100', sale_price: '1700', current_stock: 2 },
+      { id: 4, size: '40', without_size: false, purchase_price: '900', sale_price: '1400', current_stock: 1 },
+      { id: 7, size: '41', without_size: false, purchase_price: '1100', sale_price: '1700', current_stock: 2 },
+    ],
+  },
+  {
+    id: 3,
+    name: 'کمربند چرمی',
+    description: '',
+    categories: [],
+    created_at: '',
+    updated_at: '',
+    variants: [
+      { id: 8, size: null, without_size: true, purchase_price: '500', sale_price: '800', current_stock: 4 },
     ],
   },
 ]
@@ -38,8 +49,8 @@ const products: Product[] = [
 const response: BatchPurchaseResponse = {
   product: 2,
   items: [
-    { movement: 10, variant: 4, size: '40', quantity: 2, current_stock: 3 },
-    { movement: 11, variant: 8, size: '42', quantity: 1, current_stock: 1 },
+    { movement: 10, variant: 4, size: '40', without_size: false, quantity: 2, current_stock: 3 },
+    { movement: 11, variant: 8, size: '42', without_size: false, quantity: 1, current_stock: 1 },
   ],
 }
 
@@ -185,5 +196,44 @@ describe('BatchPurchaseModal', () => {
     expect(await screen.findByText('Each size may appear only once.')).toBeInTheDocument()
     expect(onSuccess).not.toHaveBeenCalled()
     expect(screen.getByRole('dialog', { name: 'ورود گروهی خرید' })).toBeInTheDocument()
+  })
+
+  it('submits the sizeless backend contract for a new sizeless variant', async () => {
+    renderModal()
+    fireEvent.change(screen.getByLabelText('محصول *'), { target: { value: '1' } })
+    fireEvent.click(screen.getByRole('button', { name: 'انتخاب محصول بدون سایز' }))
+    fireEvent.click(screen.getByRole('button', { name: 'افزایش تعداد محصول بدون سایز' }))
+    fireEvent.change(screen.getByLabelText('قیمت خرید مشترک *'), { target: { value: '500000' } })
+    fireEvent.change(screen.getByLabelText('قیمت فروش مشترک *'), { target: { value: '800000' } })
+    fireEvent.click(screen.getByRole('button', { name: 'ثبت همه' }))
+
+    await waitFor(() => expect(createBatchPurchase).toHaveBeenCalledWith({
+      product: 1,
+      purchase_price: 500000,
+      sale_price: 800000,
+      note: '',
+      items: [{ without_size: true, quantity: 1 }],
+    }))
+  })
+
+  it('keeps existing sizeless products sizeless and prevents mixing variant modes', async () => {
+    renderModal()
+    fireEvent.change(screen.getByLabelText('محصول *'), { target: { value: '3' } })
+
+    expect(screen.getByRole('button', { name: 'انتخاب دسته کتونی' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'انتخاب محصول بدون سایز' }))
+    expect(screen.getByText('موجودی فعلی ۴')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'افزایش تعداد محصول بدون سایز' }))
+    expect(screen.queryByLabelText('قیمت خرید مشترک *')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'ثبت همه' }))
+
+    await waitFor(() => expect(createBatchPurchase).toHaveBeenCalledWith({
+      product: 3,
+      note: '',
+      items: [{ without_size: true, quantity: 1 }],
+    }))
+
+    fireEvent.change(screen.getByLabelText('محصول *'), { target: { value: '2' } })
+    expect(screen.getByRole('button', { name: 'انتخاب محصول بدون سایز' })).toBeDisabled()
   })
 })

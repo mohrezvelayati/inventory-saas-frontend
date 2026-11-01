@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { AlertTriangle, ArrowLeft, LoaderCircle, MessageCircleMore } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { getDashboard } from '../features/dashboard/dashboardApi'
+import { variantSizeLabel } from '../lib/variant'
 
 export function NotificationsPage() {
   const { data: dashboard, isPending, isError } = useQuery({ queryKey: ['dashboard'], queryFn: getDashboard, retry: false })
@@ -22,7 +23,7 @@ export function NotificationsPage() {
             {lowStock.map((item) => (
               <Link to="/inventory" key={`low-${item.product_name}-${item.size}`} className="activity-item">
                 <span className="activity-icon danger"><AlertTriangle /></span>
-                <p><strong>محصول کم‌موجود</strong><small>{item.product_name} سایز {item.size} — {item.current_stock.toLocaleString('fa-IR')} عدد موجود است.</small></p>
+                <p><strong>محصول کم‌موجود</strong><small>{item.product_name}، {variantSizeLabel(item.size)} — {item.current_stock.toLocaleString('fa-IR')} عدد موجود است.</small></p>
                 <ArrowLeft size={16} />
               </Link>
             ))}

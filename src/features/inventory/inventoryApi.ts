@@ -25,7 +25,8 @@ export type InventoryEntryInput = {
   productId: number
   variantId?: number
   newVariant?: {
-    size: string
+    size?: string
+    without_size?: boolean
     purchase_price: string
     sale_price: string
   }
@@ -53,7 +54,7 @@ export async function createInventoryEntry(input: InventoryEntryInput) {
     variantId = createdVariant.id
   }
 
-  if (!variantId) throw new Error('یک سایز را انتخاب کنید.')
+  if (!variantId) throw new Error('یک نوع موجودی را انتخاب کنید.')
 
   try {
     const movement = await createInventoryMovement({

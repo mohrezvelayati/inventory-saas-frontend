@@ -12,6 +12,7 @@ import { useAuth } from '../features/auth/useAuth'
 import { deleteMember, getMemberPermissions, getMembers, getPermissionCatalog, grantMemberPermission, revokeMemberPermission, updateMemberRole } from '../features/stores/membersApi'
 import { buildInvitationLink, copyText, createInvitation, getInvitations, revokeInvitation } from '../features/stores/invitationsApi'
 import { getPermissionCopy } from '../features/stores/permissionCopy'
+import { variantSizeLabel } from '../lib/variant'
 import type { Customer, InvitationRole, StoreInvitation, StoreMember } from '../types/api'
 
 function PageHeading({ title, subtitle }: { title: string; subtitle: string }) {
@@ -83,11 +84,11 @@ export function InventoryPage() {
     {canCreateVariant && <button className="secondary-button" onClick={() => { setBatchMessage(''); setBatchOpen(true) }}><Boxes /> ورود گروهی خرید</button>}
     {batchMessage && <p className="form-success"><Check />{batchMessage}</p>}
     <Link className="secondary-button secondary-link" to="/inventory/history"><History /> تاریخچه حرکات موجودی</Link>
-    <div className="operation-summary card"><Boxes /><div><strong>{totalStock.toLocaleString('fa-IR')}</strong><span>موجودی این صفحه از {data?.count ?? '—'} سایز</span></div></div>
-    <div className="simple-list">{isPending ? <div className="loading-state"><LoaderCircle className="spin" /></div> : items.map((item) => <article className="simple-row card" key={item.id}><span className="product-visual compact">📦</span><div><strong>{item.product_name}</strong><small>سایز {item.size}</small></div><StatusBadge tone={item.current_stock === 0 ? 'danger' : item.current_stock <= 2 ? 'warning' : 'success'}>{item.current_stock.toLocaleString('fa-IR')} عدد</StatusBadge></article>)}</div>
+    <div className="operation-summary card"><Boxes /><div><strong>{totalStock.toLocaleString('fa-IR')}</strong><span>موجودی این صفحه از {data?.count ?? '—'} مورد</span></div></div>
+    <div className="simple-list">{isPending ? <div className="loading-state"><LoaderCircle className="spin" /></div> : items.map((item) => <article className="simple-row card" key={item.id}><span className="product-visual compact">📦</span><div><strong>{item.product_name}</strong><small>{variantSizeLabel(item.size)}</small></div><StatusBadge tone={item.current_stock === 0 ? 'danger' : item.current_stock <= 2 ? 'warning' : 'success'}>{item.current_stock.toLocaleString('fa-IR')} عدد</StatusBadge></article>)}</div>
     <Pagination page={page} count={data?.count ?? 0} onChange={setPage} />
     {open && <InventoryMovementModal products={products} canCreateVariant={canCreateVariant} onClose={() => setOpen(false)} />}
-    {batchOpen && <BatchPurchaseModal products={products} onClose={() => setBatchOpen(false)} onSuccess={(response) => { const totalQuantity = response.items.reduce((sum, item) => sum + item.quantity, 0); setBatchOpen(false); setBatchMessage(`${response.items.length.toLocaleString('fa-IR')} سایز و ${totalQuantity.toLocaleString('fa-IR')} عدد با موفقیت ثبت شد.`) }} />}
+    {batchOpen && <BatchPurchaseModal products={products} onClose={() => setBatchOpen(false)} onSuccess={(response) => { const totalQuantity = response.items.reduce((sum, item) => sum + item.quantity, 0); setBatchOpen(false); setBatchMessage(`${response.items.length.toLocaleString('fa-IR')} مورد و ${totalQuantity.toLocaleString('fa-IR')} عدد با موفقیت ثبت شد.`) }} />}
   </div>
 }
 
@@ -100,7 +101,7 @@ export function InventoryHistoryPage() {
     <div className="subpage-heading"><Link to="/inventory"><ArrowRight /></Link><div><h2>تاریخچه موجودی</h2><p>ردیابی تمام ورودها، اصلاح‌ها و خروج فروش</p></div></div>
     <div className="status-tabs">{[{ value: '', label: 'همه' }, { value: 'purchase', label: 'خرید' }, { value: 'adjustment', label: 'اصلاح' }, { value: 'sale', label: 'فروش' }].map((item) => <button className={type === item.value ? 'active' : ''} key={item.value} onClick={() => { setType(item.value); setPage(1) }}>{item.label}</button>)}</div>
     <div className="operation-summary card"><ArrowDownUp /><div><strong>{data?.count ?? '—'}</strong><span>حرکت ثبت‌شده</span></div></div>
-    <div className="simple-list">{isPending && <div className="loading-state"><LoaderCircle className="spin" /></div>}{isError && <div className="error-state"><History /><strong>تاریخچه دریافت نشد</strong><span>{(error as Error).message}</span></div>}{data?.results.map((movement) => { const meta = typeLabel[movement.movement_type]; return <article className="movement-row card" key={movement.id}><span className={`movement-quantity ${movement.quantity > 0 ? 'in' : 'out'}`}>{movement.quantity > 0 ? '+' : ''}{movement.quantity.toLocaleString('fa-IR')}</span><div><strong>{movement.product_name}</strong><small>سایز {movement.variant_size} · {movement.created_by_username || 'سیستم'}</small><small>{new Date(movement.created_at).toLocaleString('fa-IR')}</small></div><StatusBadge tone={meta.tone}>{meta.label}</StatusBadge>{movement.note && <p>{movement.note}</p>}</article> })}</div>
+    <div className="simple-list">{isPending && <div className="loading-state"><LoaderCircle className="spin" /></div>}{isError && <div className="error-state"><History /><strong>تاریخچه دریافت نشد</strong><span>{(error as Error).message}</span></div>}{data?.results.map((movement) => { const meta = typeLabel[movement.movement_type]; return <article className="movement-row card" key={movement.id}><span className={`movement-quantity ${movement.quantity > 0 ? 'in' : 'out'}`}>{movement.quantity > 0 ? '+' : ''}{movement.quantity.toLocaleString('fa-IR')}</span><div><strong>{movement.product_name}</strong><small>{variantSizeLabel(movement.variant_size)} · {movement.created_by_username || 'سیستم'}</small><small>{new Date(movement.created_at).toLocaleString('fa-IR')}</small></div><StatusBadge tone={meta.tone}>{meta.label}</StatusBadge>{movement.note && <p>{movement.note}</p>}</article> })}</div>
     <Pagination page={page} count={data?.count ?? 0} onChange={setPage} />
   </div>
 }
