@@ -395,3 +395,12 @@
 .notifications .activity-item:last-child { border-bottom: 0; }
 .notifications .section-title { margin: 12px 0 6px 4px; }
 .muted-empty { padding: 28px 14px; text-align: center; color: var(--muted); font-size: 11px; line-height: 1.8; }
+
+/* iOS Safari zooms focused form controls whose text is smaller than 16px. */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
