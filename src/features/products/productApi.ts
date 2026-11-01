@@ -2,6 +2,13 @@ import { apiRequest } from '../../lib/api'
 import { getAllResults } from '../../lib/pagination'
 import type { Category, PaginatedResponse, Product, ProductVariant, UpdateProductSalePriceInput } from '../../types/api'
 
+export type VariantInput = {
+  size?: string
+  without_size?: boolean
+  purchase_price: string
+  sale_price: string
+}
+
 export type ProductListFilters = {
   search?: string
   page?: number
@@ -37,11 +44,11 @@ export function deleteProduct(id: number) {
   return apiRequest<void>(`/catalog/products/${id}/`, { method: 'DELETE' })
 }
 
-export function createVariant(productId: number, input: { size: string; purchase_price: string; sale_price: string }) {
+export function createVariant(productId: number, input: VariantInput) {
   return apiRequest<ProductVariant>(`/catalog/product/${productId}/variants/`, { method: 'POST', body: JSON.stringify(input) })
 }
 
-export function updateVariant(id: number, input: { size?: string; purchase_price?: string; sale_price?: string }) {
+export function updateVariant(id: number, input: Partial<VariantInput>) {
   return apiRequest<ProductVariant>(`/catalog/variants/${id}/`, { method: 'PATCH', body: JSON.stringify(input) })
 }
 

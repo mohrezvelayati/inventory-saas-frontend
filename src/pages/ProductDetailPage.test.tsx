@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthContext, type AuthContextValue } from '../features/auth/auth-context'
-import { getProduct, updateProductSalePrice } from '../features/products/productApi'
+import { createVariant, getProduct, updateProductSalePrice } from '../features/products/productApi'
 import { ApiError } from '../lib/api'
 import type { PermissionCode, Product } from '../types/api'
 import { ProductDetailPage } from './DetailPages'
@@ -11,6 +11,7 @@ import { ProductDetailPage } from './DetailPages'
 vi.mock('../features/products/productApi', async (importOriginal) => ({
   ...await importOriginal<typeof import('../features/products/productApi')>(),
   getProduct: vi.fn(),
+  createVariant: vi.fn(),
   updateProductSalePrice: vi.fn(),
 }))
 
@@ -22,8 +23,8 @@ const product: Product = {
   created_at: '2026-08-27T10:00:00Z',
   updated_at: '2026-08-27T10:00:00Z',
   variants: [
-    { id: 40, size: '40', purchase_price: '4000000', sale_price: '5200000', current_stock: 2 },
-    { id: 41, size: '41', purchase_price: '4100000', sale_price: '5300000', current_stock: 1 },
+    { id: 40, size: '40', without_size: false, purchase_price: '4000000', sale_price: '5200000', current_stock: 2 },
+    { id: 41, size: '41', without_size: false, purchase_price: '4100000', sale_price: '5300000', current_stock: 1 },
   ],
 }
 
@@ -129,5 +130,35 @@ describe('ProductDetailPage bulk sale-price update', () => {
     fireEvent.change(input, { target: { value: '5800000' } })
     fireEvent.click(submitButton)
     expect(await screen.findByText('این قیمت از سمت سرور پذیرفته نشد.')).toBeInTheDocument()
+  })
+
+  it('shows an existing sizeless variant without offering a second variant mode', async () => {
+    renderDetail(['manage_catalog'], {
+      ...product,
+      variants: [{ id: 42, size: null, without_size: true, purchase_price: '500000', sale_price: '800000', current_stock: 4 }],
+    })
+
+    expect((await screen.findAllByText('بدون سایز')).length).toBeGreaterThan(0)
+    expect(screen.getByRole('button', { name: /تغییر قیمت فروش/ })).toBeInTheDocument()
+    expect(screen.queryByLabelText('این محصول سایز ندارد')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /افزودن سایز/ })).not.toBeInTheDocument()
+  })
+
+  it('creates the first variant as sizeless from product detail', async () => {
+    const emptyProduct = { ...product, variants: [] }
+    vi.mocked(createVariant).mockResolvedValue({ id: 42, size: null, without_size: true, purchase_price: '500000', sale_price: '800000', current_stock: 0 })
+    renderDetail(['manage_catalog'], emptyProduct)
+
+    await screen.findByText('Jordan 1 Celadon')
+    fireEvent.click(screen.getByLabelText('این محصول سایز ندارد'))
+    fireEvent.change(screen.getByLabelText('قیمت خرید'), { target: { value: '500000' } })
+    fireEvent.change(screen.getByLabelText('قیمت فروش'), { target: { value: '800000' } })
+    fireEvent.click(screen.getByRole('button', { name: /افزودن محصول بدون سایز/ }))
+
+    await waitFor(() => expect(createVariant).toHaveBeenCalledWith(7, {
+      without_size: true,
+      purchase_price: '500000',
+      sale_price: '800000',
+    }))
   })
 })

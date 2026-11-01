@@ -44,7 +44,8 @@ export type PaginatedResponse<T> = {
 
 export type ProductVariant = {
   id: number
-  size: string
+  size: string | null
+  without_size: boolean
   purchase_price: string
   sale_price: string
   current_stock: number
@@ -96,7 +97,7 @@ export type SaleItem = {
   id: number
   variant: number
   product_name: string
-  size: string
+  size: string | null
   quantity: number
   unit_price: string
   discount: string
@@ -131,7 +132,7 @@ export type WantedProduct = {
 export type Dashboard = {
   sales: { orders_count: number; revenue: string; discount: string }
   inventory: { total_variants: number; total_stock: number }
-  low_stock: { product_name: string; size: string; current_stock: number }[]
+  low_stock: { product_name: string; size: string | null; current_stock: number }[]
   products: { product_name: string; sold_count: number }[]
   wanted: { product_name: string; size: string; wanted_count: number }[]
 }
@@ -173,7 +174,7 @@ export type Customer = {
 export type InventoryItem = {
   id: number
   product_name: string
-  size: string
+  size: string | null
   current_stock: number
 }
 
@@ -189,17 +190,21 @@ export type InventoryMovement = {
 export type InventoryMovementHistory = InventoryMovement & {
   product_id: number
   product_name: string
-  variant_size: string
+  variant_size: string | null
   created_by: number | null
   created_by_username: string | null
 }
+
+export type BatchPurchaseItemInput =
+  | { size: string; quantity: number; without_size?: false }
+  | { size?: never; quantity: number; without_size: true }
 
 export type BatchPurchaseInput = {
   product: number
   purchase_price?: number
   sale_price?: number
   note: string
-  items: { size: string; quantity: number }[]
+  items: BatchPurchaseItemInput[]
 }
 
 export type BatchPurchaseResponse = {
@@ -207,7 +212,8 @@ export type BatchPurchaseResponse = {
   items: {
     movement: number
     variant: number
-    size: string
+    size: string | null
+    without_size: boolean
     quantity: number
     current_stock: number
   }[]

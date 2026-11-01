@@ -15,6 +15,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../features/auth/useAuth'
 import { getDashboard, getReports } from '../features/dashboard/dashboardApi'
+import { variantSizeLabel } from '../lib/variant'
 
 const money = (value?: string) => value ? Number(value).toLocaleString('fa-IR') : '۰'
 const localIsoDate = (date: Date) => {
@@ -63,14 +64,14 @@ export function HomePage() {
           <article className="stat-card"><ShoppingCart className="purple" /><span>سفارش امروز</span><strong>{dashboard.sales.orders_count.toLocaleString('fa-IR')}</strong><small>{money(dashboard.sales.discount)} تخفیف</small></article>
           <article className="stat-card"><AlertTriangle className="orange" /><span>کم‌موجود</span><strong>{dashboard.low_stock.length.toLocaleString('fa-IR')}</strong><small>محصول</small></article>
           <article className="stat-card"><MessageCircleMore className="orange" /><span>درخواست‌ها</span><strong>{dashboard.wanted.reduce((sum,item) => sum + item.wanted_count, 0).toLocaleString('fa-IR')}</strong><small>تقاضای ثبت‌شده</small></article>
-          <article className="stat-card"><Box className="green" /><span>موجودی کل</span><strong>{dashboard.inventory.total_stock.toLocaleString('fa-IR')}</strong><small>{dashboard.inventory.total_variants.toLocaleString('fa-IR')} سایز</small></article>
+          <article className="stat-card"><Box className="green" /><span>موجودی کل</span><strong>{dashboard.inventory.total_stock.toLocaleString('fa-IR')}</strong><small>{dashboard.inventory.total_variants.toLocaleString('fa-IR')} مورد</small></article>
         </div>
       </section>
 
       <section>
         <h3 className="section-title">هشدارها و فعالیت‌های اخیر</h3>
         <div className="activity-list card">
-          {dashboard.low_stock.slice(0, 2).map((item) => <div key={`${item.product_name}-${item.size}`}><span className="activity-icon danger"><AlertTriangle /></span><p><strong>محصول کم‌موجود</strong><small>{item.product_name} سایز {item.size} فقط {item.current_stock.toLocaleString('fa-IR')} عدد موجود است.</small></p><time>اکنون</time></div>)}
+          {dashboard.low_stock.slice(0, 2).map((item) => <div key={`${item.product_name}-${item.size}`}><span className="activity-icon danger"><AlertTriangle /></span><p><strong>محصول کم‌موجود</strong><small>{item.product_name}، {variantSizeLabel(item.size)}؛ فقط {item.current_stock.toLocaleString('fa-IR')} عدد موجود است.</small></p><time>اکنون</time></div>)}
           {dashboard.wanted.slice(0, 1).map((item) => <div key={`${item.product_name}-${item.size}`}><span className="activity-icon purple"><MessageCircleMore /></span><p><strong>تقاضای پرتکرار</strong><small>{item.product_name} سایز {item.size}، {item.wanted_count.toLocaleString('fa-IR')} درخواست دارد.</small></p><time>اکنون</time></div>)}
           <Link to="/sales" className="all-link">مشاهده همه فعالیت‌ها <ArrowLeft size={16} /></Link>
         </div>

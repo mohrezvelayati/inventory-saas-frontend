@@ -23,7 +23,7 @@ describe('product and inventory creation workflow', () => {
   it('posts the batch purchase contract to the real endpoint', async () => {
     const response = {
       product: 12,
-      items: [{ movement: 9, variant: 40, size: '40', quantity: 2, current_stock: 5 }],
+      items: [{ movement: 9, variant: 40, size: '40', without_size: false, quantity: 2, current_stock: 5 }],
     }
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify(response), { status: 201 }))
     const input = {
@@ -42,8 +42,28 @@ describe('product and inventory creation workflow', () => {
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual(input)
   })
 
+  it('posts a sizeless batch item without inventing a size value', async () => {
+    const response = {
+      product: 12,
+      items: [{ movement: 10, variant: 41, size: null, without_size: true, quantity: 3, current_stock: 3 }],
+    }
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify(response), { status: 201 }))
+    const input = {
+      product: 12,
+      purchase_price: 500000,
+      sale_price: 800000,
+      note: '',
+      items: [{ without_size: true as const, quantity: 3 }],
+    }
+
+    const result = await createBatchPurchase(input)
+
+    expect(result).toEqual(response)
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual(input)
+  })
+
   it('creates a new size before recording its first inventory movement', async () => {
-    const variant = { id: 40, size: '40', purchase_price: '1000', sale_price: '1500', current_stock: 0 }
+    const variant = { id: 40, size: '40', without_size: false, purchase_price: '1000', sale_price: '1500', current_stock: 0 }
     const movement = { id: 9, variant: 40, quantity: 5, movement_type: 'purchase', note: '' }
     const fetchMock = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response(JSON.stringify(variant), { status: 201 }))
@@ -53,6 +73,19 @@ describe('product and inventory creation workflow', () => {
 
     expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/catalog/product/1/variants/')
     expect(fetchMock.mock.calls[1][0]).toBe('/api/v1/inventory/movements/create/')
+  })
+
+  it('creates a sizeless variant before recording its first inventory movement', async () => {
+    const variant = { id: 41, size: null, without_size: true, purchase_price: '500', sale_price: '800', current_stock: 0 }
+    const movement = { id: 10, variant: 41, quantity: 3, movement_type: 'purchase', note: '' }
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify(variant), { status: 201 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(movement), { status: 201 }))
+
+    await createInventoryEntry({ productId: 1, newVariant: { without_size: true, purchase_price: '500', sale_price: '800' }, quantity: 3, movement_type: 'purchase', note: '' })
+
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ without_size: true, purchase_price: '500', sale_price: '800' })
+    expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toMatchObject({ variant: 41, quantity: 3 })
   })
 
   it('records inventory for an existing size without creating another variant', async () => {
@@ -66,7 +99,7 @@ describe('product and inventory creation workflow', () => {
   })
 
   it('preserves a created zero-stock variant and allows movement-only retry', async () => {
-    const variant = { id: 42, size: '42', purchase_price: '1000', sale_price: '1500', current_stock: 0 }
+    const variant = { id: 42, size: '42', without_size: false, purchase_price: '1000', sale_price: '1500', current_stock: 0 }
     const fetchMock = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response(JSON.stringify(variant), { status: 201 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ detail: 'movement failed' }), { status: 400 }))
