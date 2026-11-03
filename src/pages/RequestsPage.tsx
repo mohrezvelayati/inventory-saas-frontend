@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Box, Clock3, LoaderCircle, MessageCircleMore, Pencil, Plus, RotateCcw, SlidersHorizontal, Trash2, TrendingUp, X } from 'lucide-react'
+import { ArrowLeft, Box, Clock3, History, LoaderCircle, MessageCircleMore, Pencil, Plus, RotateCcw, SlidersHorizontal, Trash2, TrendingUp, UserRound, X } from 'lucide-react'
 import { useState } from 'react'
 import { EmptyState, FilterButton, Pagination, SearchBox, StatusBadge } from '../components/UI'
+import { getAllCustomers } from '../features/customers/customersApi'
 import { getAllProducts } from '../features/products/productApi'
-import { createWantedProduct, deleteWantedProduct, getWantedProducts, updateWantedProduct } from '../features/wanted/wantedApi'
+import { createWantedProduct, deleteWantedProduct, getWantedCustomerRequests, getWantedProducts, updateWantedProduct } from '../features/wanted/wantedApi'
 import { ApiError } from '../lib/api'
 import type { WantedProduct } from '../types/api'
 
@@ -17,6 +18,7 @@ export function RequestsPage() {
   const [dateTo, setDateTo] = useState('')
   const [isCreateOpen, setCreateOpen] = useState(false)
   const [editingRequest, setEditingRequest] = useState<WantedProduct | null>(null)
+  const [historyRequest, setHistoryRequest] = useState<WantedProduct | null>(null)
   const [page, setPage] = useState(1)
   const { data: products } = useQuery({ queryKey: ['products', 'wanted-picker'], queryFn: getAllProducts })
   const { data, isPending, isError, error } = useQuery({ queryKey: ['wanted', search, page, minCount, productId, dateFrom, dateTo], queryFn: () => getWantedProducts({ search, page, minCount, productId, dateFrom, dateTo }) })
@@ -45,7 +47,7 @@ export function RequestsPage() {
             <article className={`entity-card request-card card ${isPopular ? 'featured' : ''}`} key={request.id}>
               <span className="product-visual">👟</span>
               <div className="entity-main"><strong>{request.product_name_display || request.product_name}</strong><span>{request.brand || 'بدون برند'} · سایز {request.size}</span><small>{new Date(request.created_at).toLocaleDateString('fa-IR')}</small></div>
-              <div className="entity-side"><StatusBadge tone={isPopular ? 'purple' : 'info'}>{isPopular ? 'محبوب' : 'ثبت‌شده'}</StatusBadge><b>{request.wanted_count.toLocaleString('fa-IR')} درخواست</b><div className="request-actions"><button className="row-edit" onClick={() => setEditingRequest(request)} aria-label="ویرایش درخواست"><Pencil /></button><button className="row-delete" onClick={() => window.confirm('این درخواست کالا حذف شود؟') && deleteMutation.mutate(request.id)} aria-label="حذف درخواست"><Trash2 /></button></div></div>
+              <div className="entity-side"><StatusBadge tone={isPopular ? 'purple' : 'info'}>{isPopular ? 'محبوب' : 'ثبت‌شده'}</StatusBadge><b>{request.wanted_count.toLocaleString('fa-IR')} درخواست</b><div className="request-actions"><button className="row-history" onClick={() => setHistoryRequest(request)} aria-label="تاریخچه مشتریان"><History /></button><button className="row-edit" onClick={() => setEditingRequest(request)} aria-label="ویرایش درخواست"><Pencil /></button><button className="row-delete" onClick={() => window.confirm('این درخواست کالا حذف شود؟') && deleteMutation.mutate(request.id)} aria-label="حذف درخواست"><Trash2 /></button></div></div>
               <ArrowLeft className="chevron" />
             </article>
           )
@@ -54,6 +56,7 @@ export function RequestsPage() {
       <Pagination page={page} count={data?.count ?? 0} onChange={setPage} />
       {isCreateOpen && <CreateWantedModal onClose={() => setCreateOpen(false)} />}
       {editingRequest && <EditWantedModal request={editingRequest} onClose={() => setEditingRequest(null)} />}
+      {historyRequest && <WantedHistoryModal request={historyRequest} onClose={() => setHistoryRequest(null)} />}
     </div>
   )
 }
@@ -76,7 +79,8 @@ function EditWantedModal({ request, onClose }: { request: WantedProduct; onClose
 function CreateWantedModal({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient()
   const { data: products } = useQuery({ queryKey: ['products', 'wanted-picker'], queryFn: getAllProducts })
-  const [form, setForm] = useState({ product: '', product_name: '', brand: '', size: '' })
+  const { data: customers, isPending: customersPending } = useQuery({ queryKey: ['customers', 'wanted-picker'], queryFn: getAllCustomers })
+  const [form, setForm] = useState({ customer: '', product: '', product_name: '', brand: '', size: '' })
   const [error, setError] = useState('')
   const mutation = useMutation({
     mutationFn: createWantedProduct,
@@ -93,8 +97,10 @@ function CreateWantedModal({ onClose }: { onClose: () => void }) {
   }
   const submit = (event: React.FormEvent) => {
     event.preventDefault()
-    if (!form.product_name || !form.size) { setError('نام محصول و سایز ضروری هستند.'); return }
-    mutation.mutate({ product: form.product ? Number(form.product) : null, product_name: form.product_name, brand: form.brand, size: form.size })
+    setError('')
+    if (!form.customer) { setError('انتخاب مشتری ضروری است.'); return }
+    if (!form.product_name.trim() || !form.size.trim()) { setError('نام محصول و سایز ضروری هستند.'); return }
+    mutation.mutate({ customer: Number(form.customer), product: form.product ? Number(form.product) : null, product_name: form.product_name.trim(), brand: form.brand.trim(), size: form.size.trim() })
   }
 
   return (
@@ -102,12 +108,34 @@ function CreateWantedModal({ onClose }: { onClose: () => void }) {
       <section className="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="create-wanted-title">
         <header><div><h2 id="create-wanted-title">ثبت درخواست جدید</h2><p>تقاضای مشتری برای کالای ناموجود را ثبت کنید.</p></div><button onClick={onClose} aria-label="بستن"><X /></button></header>
         <form className="modal-form" onSubmit={submit}>
+          <label>مشتری *<select value={form.customer} onChange={(event) => update('customer', event.target.value)} disabled={customersPending}><option value="">{customersPending ? 'در حال دریافت مشتریان...' : 'انتخاب مشتری'}</option>{customers?.map((customer) => <option key={customer.id} value={customer.id}>{customer.full_name} — {customer.phone_number}</option>)}</select></label>
+          {!customersPending && customers?.length === 0 && <p className="modal-empty-note">برای ثبت درخواست، ابتدا باید مشتری در فروشگاه ثبت شده باشد؛ در صورت نیاز از مدیر فروشگاه بخواهید مشتری را اضافه کند.</p>}
           <label>محصول موجود در کاتالوگ (اختیاری)<select value={form.product} onChange={(event) => selectProduct(event.target.value)}><option value="">محصول خارج از کاتالوگ</option>{products?.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
           <label>نام محصول *<input value={form.product_name} onChange={(event) => update('product_name', event.target.value)} placeholder="مثلاً Nike Dunk Low" /></label>
           <div className="form-row"><label>برند<input value={form.brand} onChange={(event) => update('brand', event.target.value)} placeholder="Nike" /></label><label>سایز *<input value={form.size} onChange={(event) => update('size', event.target.value)} placeholder="۴۲" /></label></div>
           {error && <p className="form-alert">{error}</p>}
           <button className="primary-button" disabled={mutation.isPending}>{mutation.isPending ? <LoaderCircle className="spin" /> : <Plus />} ثبت درخواست</button>
         </form>
+      </section>
+    </div>
+  )
+}
+
+function WantedHistoryModal({ request, onClose }: { request: WantedProduct; onClose: () => void }) {
+  const [page, setPage] = useState(1)
+  const { data, isPending, isError, error } = useQuery({
+    queryKey: ['wanted', request.id, 'requests', page],
+    queryFn: () => getWantedCustomerRequests(request.id, page),
+  })
+
+  return (
+    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <section className="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="wanted-history-title">
+        <header><div><h2 id="wanted-history-title">تاریخچه مشتریان</h2><p>{request.product_name_display || request.product_name} · سایز {request.size}</p></div><button type="button" onClick={onClose} aria-label="بستن"><X /></button></header>
+        {isPending && <div className="loading-state"><LoaderCircle className="spin" /><span>در حال دریافت تاریخچه...</span></div>}
+        {isError && <div className="error-state"><History /><strong>دریافت تاریخچه ناموفق بود</strong><span>{(error as Error).message}</span></div>}
+        {!isPending && !isError && (data?.results.length ? <div className="wanted-history-list">{data.results.map((item) => <article className="wanted-history-row" key={item.id}><span><UserRound /></span><div><strong>{item.customer_name || 'مشتری حذف‌شده یا نامشخص'}</strong><small>{item.customer_phone_number || 'شماره تماس در دسترس نیست'}</small><small>ثبت‌کننده: {item.created_by_name || 'کاربر حذف‌شده یا سیستم'}</small><time>{new Date(item.created_at).toLocaleString('fa-IR')}</time></div></article>)}</div> : <p className="muted-empty">هنوز سابقه مشتری برای این درخواست ثبت نشده است.</p>)}
+        <Pagination page={page} count={data?.count ?? 0} onChange={setPage} />
       </section>
     </div>
   )
