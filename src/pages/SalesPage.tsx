@@ -46,10 +46,11 @@ export function SalesPage() {
         {isError && <div className="error-state"><ShoppingBag /><strong>دریافت فروش‌ها ناموفق بود</strong><span>{(error as Error).message}</span></div>}
         {!isPending && !isError && (sales.length ? sales.map((sale) => {
           const meta = statusMeta[sale.status]
+          const title = sale.sale_number === null ? 'پیش‌نویس فروش' : `فروش #${sale.sale_number.toLocaleString('fa-IR')}`
           return (
             <Link className="entity-card sale-card card entity-link" to={`/sales/${sale.id}`} key={sale.id}>
               <span className="soft-icon"><ShoppingBag /></span>
-              <div className="entity-main"><strong>فروش #{sale.id.toLocaleString('fa-IR')}</strong><span>{new Date(sale.created_at).toLocaleString('fa-IR')}</span><small>کانال: {channelLabels[sale.channel]}</small></div>
+              <div className="entity-main"><strong>{title}</strong><span>{new Date(sale.created_at).toLocaleString('fa-IR')}</span><small>کانال: {channelLabels[sale.channel]}</small></div>
               <div className="entity-side"><b>{Number(sale.total_amount).toLocaleString('fa-IR')}</b><span>تومان</span><StatusBadge tone={meta.tone}>{meta.label}</StatusBadge><small>{sale.items.length.toLocaleString('fa-IR')} قلم کالا</small></div>
               <ArrowLeft className="chevron" />
             </Link>

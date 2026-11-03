@@ -32,7 +32,7 @@ export function ProductsPage() {
   const { data: categories } = useQuery({ queryKey: ['categories', 'product-filters'], queryFn: getAllCategories })
   const { data: inventory } = useQuery({ queryKey: ['inventory', 'product-filters'], queryFn: getAllInventory })
   const sizes = useMemo(() => {
-    const unique = new Set(inventory?.map((item) => String(item.size).trim()).filter(Boolean) ?? [])
+    const unique = new Set(inventory?.flatMap((item) => item.size === null ? [] : [item.size.trim()]).filter(Boolean) ?? [])
     return [...unique].sort((a, b) => a.localeCompare(b, 'fa'))
   }, [inventory])
   const { data, isPending, isError, error } = useQuery({
@@ -67,7 +67,7 @@ export function ProductsPage() {
             <Link className="entity-card card entity-link" to={`/products/${product.id}`} key={product.id}>
               <span className="product-visual">👟</span>
               <div className="entity-main"><strong>{product.name}</strong><span>{product.description || 'بدون توضیحات'}</span><b>{formatPrice(product.variants[0]?.sale_price)}</b></div>
-              <div className="entity-side"><StatusBadge tone={status.tone}>{status.label}</StatusBadge><span>{product.variants.length} سایز</span></div>
+              <div className="entity-side"><StatusBadge tone={status.tone}>{status.label}</StatusBadge><span>{product.variants.some((variant) => variant.without_size) ? 'بدون سایز' : `${product.variants.length.toLocaleString('fa-IR')} سایز`}</span></div>
               <ArrowLeft className="chevron" />
             </Link>
           )

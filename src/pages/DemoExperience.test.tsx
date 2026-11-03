@@ -19,7 +19,7 @@ const demoUser: CurrentUser = {
   membership: {
     id: 1,
     role: 'manager',
-    store: { id: 1, name: 'فروشگاه دمو انبارینو' },
+    store: { id: 1, name: 'فروشگاه دمو دستکت' },
     permissions: ['view_dashboard'],
   },
 }

@@ -25,7 +25,7 @@ const products: Product[] = [{
   categories: [],
   created_at: '',
   updated_at: '',
-  variants: [{ id: 4, size: '40', purchase_price: '900', sale_price: '1400', current_stock: 1 }],
+  variants: [{ id: 4, size: '40', without_size: false, purchase_price: '900', sale_price: '1400', current_stock: 1 }],
 }]
 
 function renderPage(permissions: PermissionCode[]) {
@@ -60,7 +60,7 @@ describe('InventoryPage batch purchase prototype access', () => {
     vi.mocked(getAllProducts).mockResolvedValue(products)
     vi.mocked(createBatchPurchase).mockResolvedValue({
       product: 2,
-      items: [{ movement: 10, variant: 4, size: '40', quantity: 1, current_stock: 2 }],
+      items: [{ movement: 10, variant: 4, size: '40', without_size: false, quantity: 1, current_stock: 2 }],
     })
   })
 
@@ -101,10 +101,11 @@ describe('InventoryPage batch purchase prototype access', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /ورود گروهی خرید/ }))
     fireEvent.change(screen.getByLabelText('محصول *'), { target: { value: '2' } })
+    fireEvent.click(screen.getByRole('button', { name: 'انتخاب دسته کتونی' }))
     fireEvent.click(screen.getByRole('button', { name: 'افزایش سایز 40' }))
     fireEvent.click(screen.getByRole('button', { name: 'ثبت همه' }))
 
-    expect(await screen.findByText('۱ سایز و ۱ عدد با موفقیت ثبت شد.')).toBeInTheDocument()
+    expect(await screen.findByText('۱ مورد و ۱ عدد با موفقیت ثبت شد.')).toBeInTheDocument()
     expect(screen.queryByRole('dialog', { name: 'ورود گروهی خرید' })).not.toBeInTheDocument()
   })
 })

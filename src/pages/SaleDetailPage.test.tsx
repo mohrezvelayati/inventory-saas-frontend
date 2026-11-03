@@ -13,7 +13,9 @@ vi.mock('../features/sales/salesApi', async (importOriginal) => ({
 
 const completedSale: Sale = {
   id: 12,
-  customer: null,
+  sale_number: 3,
+  customer: 42,
+  customer_name: 'نیلوفر مرادی',
   channel: 'store',
   payment_method: 'card',
   status: 'completed',
@@ -40,14 +42,20 @@ describe('SaleDetailPage completion time', () => {
   it('shows completed_at for a completed sale', async () => {
     renderPage(completedSale)
 
+    expect(await screen.findByRole('heading', { name: 'فروش #۳' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'فروش #۱۲' })).not.toBeInTheDocument()
     expect(await screen.findByText('زمان تکمیل فروش')).toBeInTheDocument()
     expect(screen.getByText(new Date(completedSale.completed_at!).toLocaleString('fa-IR'))).toBeInTheDocument()
+    expect(screen.getByText('نیلوفر مرادی')).toBeInTheDocument()
+    expect(screen.queryByText('#۴۲')).not.toBeInTheDocument()
   })
 
   it('does not show completion time for a draft sale', async () => {
-    renderPage({ ...completedSale, status: 'draft', completed_at: null })
+    renderPage({ ...completedSale, sale_number: null, customer: null, customer_name: null, status: 'draft', completed_at: null })
 
-    await screen.findByText('پیش‌نویس')
+    expect(await screen.findByRole('heading', { name: 'پیش‌نویس فروش' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'فروش #۱۲' })).not.toBeInTheDocument()
     expect(screen.queryByText('زمان تکمیل فروش')).not.toBeInTheDocument()
+    expect(screen.getByText('بدون مشتری')).toBeInTheDocument()
   })
 })
