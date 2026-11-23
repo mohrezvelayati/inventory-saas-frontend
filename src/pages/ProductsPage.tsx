@@ -6,6 +6,7 @@ import { EmptyState, FilterButton, Pagination, SearchBox, StatusBadge } from '..
 import { createProduct, getAllCategories, getProducts } from '../features/products/productApi'
 import { getAllInventory } from '../features/inventory/inventoryApi'
 import { ApiError } from '../lib/api'
+import { createImagePreviewUrl } from '../lib/image'
 import type { Product } from '../types/api'
 
 const MAX_PRODUCT_IMAGE_SIZE = 5 * 1024 * 1024
@@ -126,7 +127,9 @@ function CreateProductModal({ onClose }: { onClose: () => void }) {
     }
     setError('')
     setImage(file)
-    setImagePreview(URL.createObjectURL(file))
+    const previewUrl = createImagePreviewUrl(file)
+    if (!previewUrl) { setError('پیش‌نمایش این تصویر قابل نمایش نیست.'); return }
+    setImagePreview(previewUrl)
   }
 
   const clearImage = () => {

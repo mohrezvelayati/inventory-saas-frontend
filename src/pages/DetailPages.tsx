@@ -6,6 +6,7 @@ import { MoneyInWords, StatusBadge } from '../components/UI'
 import { createVariant, deleteProduct, deleteVariant, getProduct, updateProduct, updateProductSalePrice } from '../features/products/productApi'
 import { useAuth } from '../features/auth/useAuth'
 import { ApiError } from '../lib/api'
+import { createImagePreviewUrl } from '../lib/image'
 import { variantSizeLabel } from '../lib/variant'
 import { cancelSale, deleteDraftSale, getSale } from '../features/sales/salesApi'
 import type { Product, Sale, UpdateProductSalePriceInput } from '../types/api'
@@ -74,7 +75,9 @@ function ProductEditor({ product, priceMessage, onPriceUpdated }: { product: Pro
     setError('')
     setRemoveImage(false)
     setImageFile(file)
-    setImagePreview(URL.createObjectURL(file))
+    const previewUrl = createImagePreviewUrl(file)
+    if (!previewUrl) { setError('پیش‌نمایش این تصویر قابل نمایش نیست.'); return }
+    setImagePreview(previewUrl)
   }
 
   const resetImageInput = () => {

@@ -6,6 +6,7 @@ import { getAllCustomers } from '../features/customers/customersApi'
 import { getAllProducts } from '../features/products/productApi'
 import { createWantedProduct, deleteWantedProduct, getWantedCustomerRequests, getWantedProducts, updateWantedProduct } from '../features/wanted/wantedApi'
 import { ApiError } from '../lib/api'
+import { createImagePreviewUrl } from '../lib/image'
 import type { WantedProduct } from '../types/api'
 
 const MAX_WANTED_IMAGE_SIZE = 5 * 1024 * 1024
@@ -114,7 +115,9 @@ function CreateWantedModal({ onClose }: { onClose: () => void }) {
     }
     setError('')
     setImageFile(file)
-    setImagePreview(URL.createObjectURL(file))
+    const previewUrl = createImagePreviewUrl(file)
+    if (!previewUrl) { setError('پیش‌نمایش این تصویر قابل نمایش نیست.'); return }
+    setImagePreview(previewUrl)
   }
   const clearImage = () => {
     setImageFile(null)
