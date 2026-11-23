@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthContext, type AuthContextValue } from '../features/auth/auth-context'
-import { createVariant, getProduct, updateProductSalePrice } from '../features/products/productApi'
+import { createVariant, getProduct, updateProduct, updateProductSalePrice } from '../features/products/productApi'
 import { ApiError } from '../lib/api'
 import type { PermissionCode, Product } from '../types/api'
 import { ProductDetailPage } from './DetailPages'
@@ -12,6 +12,7 @@ vi.mock('../features/products/productApi', async (importOriginal) => ({
   ...await importOriginal<typeof import('../features/products/productApi')>(),
   getProduct: vi.fn(),
   createVariant: vi.fn(),
+  updateProduct: vi.fn(),
   updateProductSalePrice: vi.fn(),
 }))
 
@@ -19,6 +20,7 @@ const product: Product = {
   id: 7,
   name: 'Jordan 1 Celadon',
   description: '',
+  image: null,
   categories: [],
   created_at: '2026-08-27T10:00:00Z',
   updated_at: '2026-08-27T10:00:00Z',
@@ -160,5 +162,45 @@ describe('ProductDetailPage bulk sale-price update', () => {
       purchase_price: '500000',
       sale_price: '800000',
     }))
+  })
+
+  it('shows the current image and clears it with image null while invalidating product queries', async () => {
+    const imageProduct = { ...product, image: 'https://api.example.com/media/products/jordan.png' }
+    vi.mocked(updateProduct).mockResolvedValue({ ...imageProduct, image: null })
+    const queryClient = renderDetail(['manage_catalog'], imageProduct)
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+
+    expect(await screen.findByRole('img', { name: 'تصویر Jordan 1 Celadon' })).toHaveAttribute('src', imageProduct.image)
+    fireEvent.click(screen.getByRole('button', { name: /حذف تصویر فعلی/ }))
+    expect(screen.getByText('تصویر پس از ذخیره حذف می‌شود.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /ذخیره تغییرات/ }))
+
+    await waitFor(() => expect(updateProduct).toHaveBeenCalledWith(7, {
+      name: 'Jordan 1 Celadon',
+      description: '',
+      categories: [],
+      image: null,
+    }))
+    await waitFor(() => {
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['product', 7] })
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['products'] })
+    })
+  })
+
+  it('opens the product image in a larger viewer and exposes a rear-camera input', async () => {
+    const imageProduct = { ...product, image: 'https://api.example.com/media/products/jordan.png' }
+    renderDetail(['manage_catalog'], imageProduct)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'نمایش بزرگ تصویر Jordan 1 Celadon' }))
+    expect(screen.getByRole('dialog', { name: 'تصویر بزرگ Jordan 1 Celadon' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'تصویر بزرگ Jordan 1 Celadon' })).toHaveAttribute('src', imageProduct.image)
+
+    fireEvent.click(screen.getByRole('button', { name: 'بستن تصویر' }))
+    expect(screen.queryByRole('dialog', { name: 'تصویر بزرگ Jordan 1 Celadon' })).not.toBeInTheDocument()
+
+    const cameraInput = screen.getByLabelText('ورودی دوربین محصول')
+    expect(cameraInput).toHaveAttribute('accept', 'image/*')
+    expect(cameraInput).toHaveAttribute('capture', 'environment')
+    expect(screen.getByRole('button', { name: /گرفتن عکس با دوربین/ })).toBeInTheDocument()
   })
 })

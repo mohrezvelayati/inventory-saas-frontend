@@ -22,6 +22,7 @@ const products: Product[] = [{
   id: 2,
   name: 'Air Max',
   description: '',
+  image: null,
   categories: [],
   created_at: '',
   updated_at: '',

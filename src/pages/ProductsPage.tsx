@@ -1,12 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Box, Grid2X2, LoaderCircle, PackageX, Plus, RotateCcw, Ruler, SlidersHorizontal, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { ArrowLeft, Box, Grid2X2, LoaderCircle, PackageX, Plus, RotateCcw, Ruler, SlidersHorizontal, Trash2, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState, FilterButton, Pagination, SearchBox, StatusBadge } from '../components/UI'
 import { createProduct, getAllCategories, getProducts } from '../features/products/productApi'
 import { getAllInventory } from '../features/inventory/inventoryApi'
 import { ApiError } from '../lib/api'
+import { createImagePreviewUrl } from '../lib/image'
 import type { Product } from '../types/api'
+
+const MAX_PRODUCT_IMAGE_SIZE = 5 * 1024 * 1024
 
 function formatPrice(value?: string) {
   if (!value) return 'بدون قیمت'
@@ -65,7 +68,9 @@ export function ProductsPage() {
           const status = getProductStatus(product)
           return (
             <Link className="entity-card card entity-link" to={`/products/${product.id}`} key={product.id}>
-              <span className="product-visual">👟</span>
+              {product.image
+                ? <img className="product-visual product-image" src={product.image} alt={`تصویر ${product.name}`} />
+                : <span className="product-visual" role="img" aria-label={`تصویر پیش‌فرض ${product.name}`}><Box aria-hidden="true" /></span>}
               <div className="entity-main"><strong>{product.name}</strong><span>{product.description || 'بدون توضیحات'}</span><b>{formatPrice(product.variants[0]?.sale_price)}</b></div>
               <div className="entity-side"><StatusBadge tone={status.tone}>{status.label}</StatusBadge><span>{product.variants.some((variant) => variant.without_size) ? 'بدون سایز' : `${product.variants.length.toLocaleString('fa-IR')} سایز`}</span></div>
               <ArrowLeft className="chevron" />
@@ -83,7 +88,11 @@ function CreateProductModal({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient()
   const { data: categories } = useQuery({ queryKey: ['categories', 'product-picker'], queryFn: getAllCategories })
   const [form, setForm] = useState({ name: '', description: '', category: '' })
+  const [image, setImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState('')
   const [error, setError] = useState('')
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => () => { if (imagePreview) URL.revokeObjectURL(imagePreview) }, [imagePreview])
   const mutation = useMutation({
     mutationFn: createProduct,
     onSuccess: async () => {
@@ -102,7 +111,31 @@ function CreateProductModal({ onClose }: { onClose: () => void }) {
       name: form.name.trim(),
       description: form.description,
       categories: form.category ? [Number(form.category)] : [],
+      image: image ?? undefined,
     })
+  }
+
+  const selectImage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (file.size > MAX_PRODUCT_IMAGE_SIZE) {
+      setImage(null)
+      setImagePreview('')
+      event.target.value = ''
+      setError('حجم تصویر نباید بیشتر از ۵ مگابایت باشد.')
+      return
+    }
+    setError('')
+    setImage(file)
+    const previewUrl = createImagePreviewUrl(file)
+    if (!previewUrl) { setError('پیش‌نمایش این تصویر قابل نمایش نیست.'); return }
+    setImagePreview(previewUrl)
+  }
+
+  const clearImage = () => {
+    setImage(null)
+    setImagePreview('')
+    if (imageInputRef.current) imageInputRef.current.value = ''
   }
 
   return (
@@ -113,6 +146,8 @@ function CreateProductModal({ onClose }: { onClose: () => void }) {
           <label>نام محصول *<input value={form.name} onChange={(event) => update('name', event.target.value)} placeholder="مثلاً Nike Air Force 1" autoFocus /></label>
           <label>توضیحات<input value={form.description} onChange={(event) => update('description', event.target.value)} placeholder="توضیح کوتاه محصول" /></label>
           <label>دسته‌بندی<select value={form.category} onChange={(event) => update('category', event.target.value)}><option value="">بدون دسته‌بندی</option>{categories?.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
+          <label>تصویر محصول (اختیاری)<input ref={imageInputRef} type="file" accept="image/*" onChange={selectImage} /><small>حداکثر حجم: ۵ مگابایت</small></label>
+          {imagePreview && <div className="product-image-preview"><img src={imagePreview} alt="پیش‌نمایش تصویر محصول" /><button type="button" onClick={clearImage}><Trash2 /> پاک‌کردن تصویر</button></div>}
           {error && <p className="form-alert">{error}</p>}
           <button className="primary-button" disabled={mutation.isPending}>{mutation.isPending ? <LoaderCircle className="spin" /> : <Plus />} ثبت محصول</button>
         </form>

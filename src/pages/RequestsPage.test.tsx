@@ -22,6 +22,7 @@ const product: Product = {
   id: 7,
   name: 'Nike Dunk Low',
   description: '',
+  image: 'https://api.example.com/media/products/nike.png',
   categories: [],
   variants: [],
   created_at: '2026-10-18T08:00:00Z',
@@ -47,6 +48,7 @@ const wanted: WantedProduct = {
   brand: 'Nike',
   size: '42',
   wanted_count: 2,
+  cover_image: 'https://api.example.com/media/wanted/nike-cover.png',
   created_at: '2026-10-18T08:00:00Z',
 }
 
@@ -70,6 +72,8 @@ describe('RequestsPage customer-linked wanted flow', () => {
     vi.mocked(createWantedProduct).mockResolvedValue(wanted)
     vi.mocked(deleteWantedProduct).mockResolvedValue(undefined)
     vi.mocked(updateWantedProduct).mockResolvedValue(wanted)
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:wanted-preview') })
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() })
     vi.mocked(getWantedCustomerRequests).mockResolvedValue({
       count: 2,
       next: null,
@@ -82,6 +86,7 @@ describe('RequestsPage customer-linked wanted flow', () => {
           customer_phone_number: '09121234567',
           created_by: 1,
           created_by_name: 'مدیر فروشگاه',
+          image: 'https://api.example.com/media/wanted/nike.png',
           created_at: '2026-10-18T10:00:00Z',
         },
         {
@@ -91,6 +96,7 @@ describe('RequestsPage customer-linked wanted flow', () => {
           customer_phone_number: null,
           created_by: null,
           created_by_name: null,
+          image: null,
           created_at: '2026-10-17T10:00:00Z',
         },
       ],
@@ -121,6 +127,20 @@ describe('RequestsPage customer-linked wanted flow', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
 
+  it('prefers the wanted cover image on a wanted card', async () => {
+    renderPage()
+
+    expect(await screen.findByRole('img', { name: 'تصویر Nike Dunk Low' })).toHaveAttribute('src', wanted.cover_image)
+    expect(screen.queryByText('👟')).not.toBeInTheDocument()
+  })
+
+  it('falls back to the linked catalog product image without a wanted cover', async () => {
+    vi.mocked(getWantedProducts).mockResolvedValueOnce({ ...page, results: [{ ...wanted, cover_image: null }] })
+    renderPage()
+
+    expect(await screen.findByRole('img', { name: 'تصویر Nike Dunk Low' })).toHaveAttribute('src', product.image)
+  })
+
   it('shows current and legacy customer history safely', async () => {
     renderPage()
     fireEvent.click(await screen.findByRole('button', { name: 'تاریخچه مشتریان' }))
@@ -130,6 +150,26 @@ describe('RequestsPage customer-linked wanted flow', () => {
     expect(screen.getByText('ثبت‌کننده: مدیر فروشگاه')).toBeInTheDocument()
     expect(screen.getByText('مشتری حذف‌شده یا نامشخص')).toBeInTheDocument()
     expect(screen.getByText('شماره تماس در دسترس نیست')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'عکس مرجع Nike Dunk Low' })).toHaveAttribute('loading', 'lazy')
+    expect(screen.getByRole('link', { name: 'مشاهده عکس مرجع Nike Dunk Low' })).toHaveAttribute('target', '_blank')
+    expect(screen.getByLabelText('بدون عکس مرجع')).toBeInTheDocument()
     expect(getWantedCustomerRequests).toHaveBeenCalledWith(4, 1)
+  })
+
+  it('previews and clears a wanted image and rejects files over 5 MB', async () => {
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'ثبت درخواست جدید' }))
+    const input = screen.getByLabelText(/^عکس مرجع کالا/)
+    const image = new File(['image'], 'wanted-shoe.png', { type: 'image/png' })
+
+    fireEvent.change(input, { target: { files: [image] } })
+    expect(screen.getByRole('img', { name: 'پیش‌نمایش عکس مرجع کالا' })).toHaveAttribute('src', 'blob:wanted-preview')
+    fireEvent.click(screen.getByRole('button', { name: /حذف عکس انتخاب‌شده/ }))
+    expect(screen.queryByRole('img', { name: 'پیش‌نمایش عکس مرجع کالا' })).not.toBeInTheDocument()
+    await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:wanted-preview'))
+
+    const oversizedImage = new File([new Uint8Array(5 * 1024 * 1024 + 1)], 'large.png', { type: 'image/png' })
+    fireEvent.change(input, { target: { files: [oversizedImage] } })
+    expect(screen.getByText('حجم تصویر نباید بیشتر از ۵ مگابایت باشد.')).toBeInTheDocument()
   })
 })
