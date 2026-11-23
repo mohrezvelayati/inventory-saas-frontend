@@ -31,6 +31,34 @@ describe('wanted API contracts', () => {
     }))
   })
 
+  it('creates a wanted request with its image in FormData', async () => {
+    const image = new File(['image'], 'wanted-shoe.png', { type: 'image/png' })
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ id: 4 }), { status: 201 }),
+    )
+
+    await createWantedProduct({
+      customer: 12,
+      product: 7,
+      product_name: 'Nike Dunk Low',
+      brand: 'Nike',
+      size: '42',
+      image,
+    })
+
+    const request = fetchMock.mock.calls[0][1] as RequestInit
+    expect(request.method).toBe('POST')
+    expect(request.body).toBeInstanceOf(FormData)
+    const body = request.body as FormData
+    expect(body.get('customer')).toBe('12')
+    expect(body.get('product')).toBe('7')
+    expect(body.get('product_name')).toBe('Nike Dunk Low')
+    expect(body.get('brand')).toBe('Nike')
+    expect(body.get('size')).toBe('42')
+    expect(body.get('image')).toBe(image)
+    expect((request.headers as Headers).has('Content-Type')).toBe(false)
+  })
+
   it('loads a paginated customer request history', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ count: 0, next: null, previous: null, results: [] }), { status: 200 }),

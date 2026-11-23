@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, LoaderCircle, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react'
+import { ArrowRight, Box, LoaderCircle, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { MoneyInWords } from '../components/UI'
@@ -9,7 +9,7 @@ import { addSaleItem, completeSale, createDraftSale, deleteDraftSale } from '../
 import { variantSizeLabel } from '../lib/variant'
 import type { ProductVariant, Sale } from '../types/api'
 
-type CartItem = { variant: ProductVariant; productName: string; quantity: number; discount: number }
+type CartItem = { variant: ProductVariant; productName: string; productImage: string | null; quantity: number; discount: number }
 
 export function SaleCreatePage() {
   const navigate = useNavigate()
@@ -33,7 +33,7 @@ export function SaleCreatePage() {
     setCart((current) => {
       const existing = current.find((item) => item.variant.id === variant.id)
       if (existing) return current.map((item) => item.variant.id === variant.id ? { ...item, quantity: item.quantity + selection.quantity } : item)
-      return [...current, { variant, productName: selectedProduct.name, quantity: selection.quantity, discount: 0 }]
+      return [...current, { variant, productName: selectedProduct.name, productImage: selectedProduct.image, quantity: selection.quantity, discount: 0 }]
     })
   }
 
@@ -79,7 +79,7 @@ export function SaleCreatePage() {
         <h3>اقلام فاکتور <span>{cart.length.toLocaleString('fa-IR')}</span></h3>
         {cart.length === 0 ? <div className="empty-cart card"><ShoppingBag /><span>هنوز کالایی اضافه نشده است.</span></div> : cart.map((item) => (
           <article className="cart-item card" key={item.variant.id}>
-            <span className="product-visual">👟</span><div><strong>{item.productName}</strong><small>{variantSizeLabel(item.variant.size)} · {Number(item.variant.sale_price).toLocaleString('fa-IR')} تومان</small><label>تخفیف<input aria-label={`تخفیف ${item.productName}`} type="number" min="0" value={item.discount} onChange={(event) => setCart((current) => current.map((cartItem) => cartItem.variant.id === item.variant.id ? { ...cartItem, discount: Number(event.target.value) } : cartItem))} /><MoneyInWords value={item.discount || ''} /></label></div>
+            {item.productImage ? <img className="product-visual product-image" src={item.productImage} alt={`تصویر ${item.productName}`} /> : <span className="product-visual" role="img" aria-label={`تصویر پیش‌فرض ${item.productName}`}><Box aria-hidden="true" /></span>}<div><strong>{item.productName}</strong><small>{variantSizeLabel(item.variant.size)} · {Number(item.variant.sale_price).toLocaleString('fa-IR')} تومان</small><label>تخفیف<input aria-label={`تخفیف ${item.productName}`} type="number" min="0" value={item.discount} onChange={(event) => setCart((current) => current.map((cartItem) => cartItem.variant.id === item.variant.id ? { ...cartItem, discount: Number(event.target.value) } : cartItem))} /><MoneyInWords value={item.discount || ''} /></label></div>
             <div className="quantity-control"><button onClick={() => setCart((current) => current.map((cartItem) => cartItem.variant.id === item.variant.id ? { ...cartItem, quantity: Math.max(1, cartItem.quantity - 1) } : cartItem))}><Minus /></button><b>{item.quantity.toLocaleString('fa-IR')}</b><button onClick={() => setCart((current) => current.map((cartItem) => cartItem.variant.id === item.variant.id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem))}><Plus /></button><button className="remove" onClick={() => setCart((current) => current.filter((cartItem) => cartItem.variant.id !== item.variant.id))}><Trash2 /></button></div>
           </article>
         ))}

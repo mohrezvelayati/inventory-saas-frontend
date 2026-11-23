@@ -81,7 +81,7 @@ export function HomePage() {
         <div className="section-heading"><h3 className="section-title">پرفروش‌ها</h3><Link to="/products">مشاهده همه</Link></div>
         <div className="top-products">
           {dashboard.products.slice(0, 4).map((product) => (
-            <article key={product.product_name}><span className="product-visual">👟</span><b>{product.product_name}</b><small>{product.sold_count.toLocaleString('fa-IR')} فروش</small><strong>محصول پرفروش</strong></article>
+            <article key={product.product_name}><span className="product-visual" role="img" aria-label={`تصویر پیش‌فرض ${product.product_name}`}><Box aria-hidden="true" /></span><b>{product.product_name}</b><small>{product.sold_count.toLocaleString('fa-IR')} فروش</small><strong>محصول پرفروش</strong></article>
           ))}
         </div>
       </section>

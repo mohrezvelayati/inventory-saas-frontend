@@ -1,12 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Box, Clock3, History, LoaderCircle, MessageCircleMore, Pencil, Plus, RotateCcw, SlidersHorizontal, Trash2, TrendingUp, UserRound, X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { EmptyState, FilterButton, Pagination, SearchBox, StatusBadge } from '../components/UI'
 import { getAllCustomers } from '../features/customers/customersApi'
 import { getAllProducts } from '../features/products/productApi'
 import { createWantedProduct, deleteWantedProduct, getWantedCustomerRequests, getWantedProducts, updateWantedProduct } from '../features/wanted/wantedApi'
 import { ApiError } from '../lib/api'
 import type { WantedProduct } from '../types/api'
+
+const MAX_WANTED_IMAGE_SIZE = 5 * 1024 * 1024
 
 export function RequestsPage() {
   const queryClient = useQueryClient()
@@ -43,9 +45,10 @@ export function RequestsPage() {
         {isError && <div className="error-state"><MessageCircleMore /><strong>دریافت درخواست‌ها ناموفق بود</strong><span>{(error as Error).message}</span></div>}
         {!isPending && !isError && (requests.length ? requests.map((request) => {
           const isPopular = request.wanted_count >= 5
+          const productImage = request.cover_image || products?.find((product) => product.id === request.product)?.image
           return (
             <article className={`entity-card request-card card ${isPopular ? 'featured' : ''}`} key={request.id}>
-              <span className="product-visual">👟</span>
+              {productImage ? <img className="product-visual product-image" src={productImage} alt={`تصویر ${request.product_name_display || request.product_name}`} loading="lazy" /> : <span className="product-visual" role="img" aria-label={`تصویر پیش‌فرض ${request.product_name_display || request.product_name}`}><Box aria-hidden="true" /></span>}
               <div className="entity-main"><strong>{request.product_name_display || request.product_name}</strong><span>{request.brand || 'بدون برند'} · سایز {request.size}</span><small>{new Date(request.created_at).toLocaleDateString('fa-IR')}</small></div>
               <div className="entity-side"><StatusBadge tone={isPopular ? 'purple' : 'info'}>{isPopular ? 'محبوب' : 'ثبت‌شده'}</StatusBadge><b>{request.wanted_count.toLocaleString('fa-IR')} درخواست</b><div className="request-actions"><button className="row-history" onClick={() => setHistoryRequest(request)} aria-label="تاریخچه مشتریان"><History /></button><button className="row-edit" onClick={() => setEditingRequest(request)} aria-label="ویرایش درخواست"><Pencil /></button><button className="row-delete" onClick={() => window.confirm('این درخواست کالا حذف شود؟') && deleteMutation.mutate(request.id)} aria-label="حذف درخواست"><Trash2 /></button></div></div>
               <ArrowLeft className="chevron" />
@@ -81,7 +84,11 @@ function CreateWantedModal({ onClose }: { onClose: () => void }) {
   const { data: products } = useQuery({ queryKey: ['products', 'wanted-picker'], queryFn: getAllProducts })
   const { data: customers, isPending: customersPending } = useQuery({ queryKey: ['customers', 'wanted-picker'], queryFn: getAllCustomers })
   const [form, setForm] = useState({ customer: '', product: '', product_name: '', brand: '', size: '' })
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState('')
   const [error, setError] = useState('')
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => () => { if (imagePreview) URL.revokeObjectURL(imagePreview) }, [imagePreview])
   const mutation = useMutation({
     mutationFn: createWantedProduct,
     onSuccess: async () => {
@@ -95,12 +102,31 @@ function CreateWantedModal({ onClose }: { onClose: () => void }) {
     const selected = products?.find((item) => item.id === Number(value))
     setForm((current) => ({ ...current, product: value, product_name: selected?.name ?? current.product_name }))
   }
+  const selectImage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (file.size > MAX_WANTED_IMAGE_SIZE) {
+      setImageFile(null)
+      setImagePreview('')
+      event.target.value = ''
+      setError('حجم تصویر نباید بیشتر از ۵ مگابایت باشد.')
+      return
+    }
+    setError('')
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+  const clearImage = () => {
+    setImageFile(null)
+    setImagePreview('')
+    if (imageInputRef.current) imageInputRef.current.value = ''
+  }
   const submit = (event: React.FormEvent) => {
     event.preventDefault()
     setError('')
     if (!form.customer) { setError('انتخاب مشتری ضروری است.'); return }
     if (!form.product_name.trim() || !form.size.trim()) { setError('نام محصول و سایز ضروری هستند.'); return }
-    mutation.mutate({ customer: Number(form.customer), product: form.product ? Number(form.product) : null, product_name: form.product_name.trim(), brand: form.brand.trim(), size: form.size.trim() })
+    mutation.mutate({ customer: Number(form.customer), product: form.product ? Number(form.product) : null, product_name: form.product_name.trim(), brand: form.brand.trim(), size: form.size.trim(), ...(imageFile ? { image: imageFile } : {}) })
   }
 
   return (
@@ -113,6 +139,8 @@ function CreateWantedModal({ onClose }: { onClose: () => void }) {
           <label>محصول موجود در کاتالوگ (اختیاری)<select value={form.product} onChange={(event) => selectProduct(event.target.value)}><option value="">محصول خارج از کاتالوگ</option>{products?.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
           <label>نام محصول *<input value={form.product_name} onChange={(event) => update('product_name', event.target.value)} placeholder="مثلاً Nike Dunk Low" /></label>
           <div className="form-row"><label>برند<input value={form.brand} onChange={(event) => update('brand', event.target.value)} placeholder="Nike" /></label><label>سایز *<input value={form.size} onChange={(event) => update('size', event.target.value)} placeholder="۴۲" /></label></div>
+          <label>عکس مرجع کالا (اختیاری)<input ref={imageInputRef} type="file" accept="image/*" onChange={selectImage} disabled={mutation.isPending} /><small>حداکثر حجم: ۵ مگابایت</small></label>
+          {imagePreview && <div className="product-image-preview"><img src={imagePreview} alt="پیش‌نمایش عکس مرجع کالا" /><button type="button" onClick={clearImage}><X /> حذف عکس انتخاب‌شده</button></div>}
           {error && <p className="form-alert">{error}</p>}
           <button className="primary-button" disabled={mutation.isPending}>{mutation.isPending ? <LoaderCircle className="spin" /> : <Plus />} ثبت درخواست</button>
         </form>
@@ -134,7 +162,7 @@ function WantedHistoryModal({ request, onClose }: { request: WantedProduct; onCl
         <header><div><h2 id="wanted-history-title">تاریخچه مشتریان</h2><p>{request.product_name_display || request.product_name} · سایز {request.size}</p></div><button type="button" onClick={onClose} aria-label="بستن"><X /></button></header>
         {isPending && <div className="loading-state"><LoaderCircle className="spin" /><span>در حال دریافت تاریخچه...</span></div>}
         {isError && <div className="error-state"><History /><strong>دریافت تاریخچه ناموفق بود</strong><span>{(error as Error).message}</span></div>}
-        {!isPending && !isError && (data?.results.length ? <div className="wanted-history-list">{data.results.map((item) => <article className="wanted-history-row" key={item.id}><span><UserRound /></span><div><strong>{item.customer_name || 'مشتری حذف‌شده یا نامشخص'}</strong><small>{item.customer_phone_number || 'شماره تماس در دسترس نیست'}</small><small>ثبت‌کننده: {item.created_by_name || 'کاربر حذف‌شده یا سیستم'}</small><time>{new Date(item.created_at).toLocaleString('fa-IR')}</time></div></article>)}</div> : <p className="muted-empty">هنوز سابقه مشتری برای این درخواست ثبت نشده است.</p>)}
+        {!isPending && !isError && (data?.results.length ? <div className="wanted-history-list">{data.results.map((item) => <article className="wanted-history-row" key={item.id}>{item.image ? <a className="wanted-history-image" href={item.image} target="_blank" rel="noreferrer" aria-label={`مشاهده عکس مرجع ${request.product_name_display || request.product_name}`}><img src={item.image} alt={`عکس مرجع ${request.product_name_display || request.product_name}`} loading="lazy" /></a> : <span aria-label="بدون عکس مرجع"><UserRound /></span>}<div><strong>{item.customer_name || 'مشتری حذف‌شده یا نامشخص'}</strong><small>{item.customer_phone_number || 'شماره تماس در دسترس نیست'}</small><small>ثبت‌کننده: {item.created_by_name || 'کاربر حذف‌شده یا سیستم'}</small><time>{new Date(item.created_at).toLocaleString('fa-IR')}</time></div></article>)}</div> : <p className="muted-empty">هنوز سابقه مشتری برای این درخواست ثبت نشده است.</p>)}
         <Pagination page={page} count={data?.count ?? 0} onChange={setPage} />
       </section>
     </div>

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, Ban, Box, CheckCircle2, LoaderCircle, PackagePlus, Save, ShoppingBag, Trash2, X } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowRight, Ban, Box, Camera, CheckCircle2, LoaderCircle, PackagePlus, Save, ShoppingBag, Trash2, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { MoneyInWords, StatusBadge } from '../components/UI'
 import { createVariant, deleteProduct, deleteVariant, getProduct, updateProduct, updateProductSalePrice } from '../features/products/productApi'
@@ -9,6 +9,8 @@ import { ApiError } from '../lib/api'
 import { variantSizeLabel } from '../lib/variant'
 import { cancelSale, deleteDraftSale, getSale } from '../features/sales/salesApi'
 import type { Product, Sale, UpdateProductSalePriceInput } from '../types/api'
+
+const MAX_PRODUCT_IMAGE_SIZE = 5 * 1024 * 1024
 
 function DetailLoading() { return <div className="loading-state home-loading"><LoaderCircle className="spin" /></div> }
 
@@ -26,28 +28,78 @@ function ProductEditor({ product, priceMessage, onPriceUpdated }: { product: Pro
   const queryClient = useQueryClient()
   const { user } = useAuth()
   const [form, setForm] = useState({ name: product.name, description: product.description || '' })
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState('')
+  const [removeImage, setRemoveImage] = useState(false)
+  const [imageViewerOpen, setImageViewerOpen] = useState(false)
   const [variant, setVariant] = useState({ size: '', without_size: false, purchase_price: '', sale_price: '' })
   const [priceModalOpen, setPriceModalOpen] = useState(false)
   const [error, setError] = useState('')
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => () => { if (imagePreview) URL.revokeObjectURL(imagePreview) }, [imagePreview])
   const canManageCatalog = user?.membership?.permissions.includes('manage_catalog') ?? false
   const refresh = async () => { await Promise.all([queryClient.invalidateQueries({ queryKey: ['product', product.id] }), queryClient.invalidateQueries({ queryKey: ['products'] })]) }
-  const updateMutation = useMutation({ mutationFn: () => updateProduct(product.id, { ...form, categories: product.categories }), onSuccess: refresh, onError: (mutationError) => setError((mutationError as Error).message) })
+  const updateMutation = useMutation({
+    mutationFn: () => updateProduct(product.id, {
+      ...form,
+      categories: product.categories,
+      ...(imageFile ? { image: imageFile } : removeImage ? { image: null } : {}),
+    }),
+    onSuccess: async () => {
+      await refresh()
+      setImageFile(null)
+      setImagePreview('')
+      setRemoveImage(false)
+    },
+    onError: (mutationError) => setError((mutationError as Error).message),
+  })
   const variantMutation = useMutation({ mutationFn: () => createVariant(product.id, variant.without_size ? { without_size: true, purchase_price: variant.purchase_price, sale_price: variant.sale_price } : variant), onSuccess: async () => { await refresh(); setVariant({ size: '', without_size: false, purchase_price: '', sale_price: '' }) }, onError: (mutationError) => setError((mutationError as Error).message) })
   const deleteVariantMutation = useMutation({ mutationFn: deleteVariant, onSuccess: refresh, onError: (mutationError) => setError((mutationError as Error).message) })
   const deleteMutation = useMutation({ mutationFn: () => deleteProduct(product.id), onSuccess: () => navigate('/products', { replace: true }), onError: (mutationError) => setError((mutationError as Error).message) })
 
   const hasSizelessVariant = product.variants.some((item) => item.without_size)
+  const displayedImage = imagePreview || (removeImage ? null : product.image)
+
+  const selectImage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (file.size > MAX_PRODUCT_IMAGE_SIZE) {
+      setImageFile(null)
+      setImagePreview('')
+      event.target.value = ''
+      setError('حجم تصویر نباید بیشتر از ۵ مگابایت باشد.')
+      return
+    }
+    setError('')
+    setRemoveImage(false)
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+
+  const resetImageInput = () => {
+    setImageFile(null)
+    setImagePreview('')
+    if (imageInputRef.current) imageInputRef.current.value = ''
+    if (cameraInputRef.current) cameraInputRef.current.value = ''
+  }
+
+  const markImageForRemoval = () => {
+    resetImageInput()
+    setRemoveImage(true)
+  }
 
   return <div className="page detail-page">
     <div className="subpage-heading"><Link to="/products"><ArrowRight /></Link><div><h2>جزئیات محصول</h2><p>ویرایش اطلاعات و مدیریت سایزها</p></div></div>
-    <section className="detail-hero card"><span className="product-visual large">👟</span><div><h2>{product.name}</h2><p>{hasSizelessVariant ? 'بدون سایز' : `${product.variants.length.toLocaleString('fa-IR')} سایز`} · موجودی {product.variants.reduce((sum, item) => sum + item.current_stock, 0).toLocaleString('fa-IR')}</p></div></section>
+    <section className="detail-hero card">{displayedImage ? <button type="button" className="detail-product-image-button" onClick={() => setImageViewerOpen(true)} aria-label={`نمایش بزرگ تصویر ${product.name}`}><img className="product-visual large product-image detail-product-image" src={displayedImage} alt={`تصویر ${product.name}`} /></button> : <span className="product-visual large" role="img" aria-label={`تصویر پیش‌فرض ${product.name}`}><Box aria-hidden="true" /></span>}<div><h2>{product.name}</h2><p>{hasSizelessVariant ? 'بدون سایز' : `${product.variants.length.toLocaleString('fa-IR')} سایز`} · موجودی {product.variants.reduce((sum, item) => sum + item.current_stock, 0).toLocaleString('fa-IR')}</p></div></section>
     {priceMessage && <p className="form-success"><CheckCircle2 />{priceMessage}</p>}
-    <section className="detail-form card"><h3>اطلاعات محصول</h3><label>نام محصول<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label><label>توضیحات<textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label><button className="secondary-button" onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}><Save /> ذخیره تغییرات</button></section>
+    <section className="detail-form card"><h3>اطلاعات محصول</h3><label>نام محصول<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label><label>توضیحات<textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label><label>تصویر محصول<input ref={imageInputRef} type="file" accept="image/*" onChange={selectImage} disabled={updateMutation.isPending} /><small>حداکثر حجم: ۵ مگابایت</small></label><input ref={cameraInputRef} className="visually-hidden" type="file" accept="image/*" capture="environment" aria-label="ورودی دوربین محصول" onChange={selectImage} disabled={updateMutation.isPending} /><button type="button" className="image-action-button" onClick={() => cameraInputRef.current?.click()} disabled={updateMutation.isPending}><Camera /> گرفتن عکس با دوربین</button>{imageFile && <button type="button" className="image-action-button" onClick={resetImageInput}><X /> لغو انتخاب تصویر جدید</button>}{!imageFile && product.image && !removeImage && <button type="button" className="image-action-button danger" onClick={markImageForRemoval}><Trash2 /> حذف تصویر فعلی</button>}{removeImage && <div className="image-removal-notice"><span>تصویر پس از ذخیره حذف می‌شود.</span><button type="button" onClick={() => setRemoveImage(false)}>لغو حذف</button></div>}<button className="secondary-button" onClick={() => { setError(''); updateMutation.mutate() }} disabled={updateMutation.isPending}><Save /> ذخیره تغییرات</button></section>
     <section className="variant-section"><h3>گونه‌های موجودی</h3>{canManageCatalog && product.variants.length > 0 && <button className="secondary-button" onClick={() => setPriceModalOpen(true)}><Save /> {hasSizelessVariant ? 'تغییر قیمت فروش' : 'تغییر قیمت همه سایزها'}</button>}{product.variants.map((item) => <article className="variant-row card" key={item.id}><span><strong>{variantSizeLabel(item.size)}</strong><small>موجودی {item.current_stock.toLocaleString('fa-IR')}</small></span><span><strong>{Number(item.sale_price).toLocaleString('fa-IR')}</strong><small>تومان</small></span><button onClick={() => window.confirm('این مورد حذف شود؟') && deleteVariantMutation.mutate(item.id)}><Trash2 /></button></article>)}</section>
     {!hasSizelessVariant && <section className="detail-form card"><h3>افزودن نوع موجودی</h3>{product.variants.length === 0 && <label className="inline-check"><input type="checkbox" checked={variant.without_size} onChange={(event) => setVariant({ ...variant, without_size: event.target.checked, size: '' })} />این محصول سایز ندارد</label>}<div className="form-row">{!variant.without_size && <label>سایز<input value={variant.size} onChange={(event) => setVariant({ ...variant, size: event.target.value })} /></label>}<label>قیمت خرید<input aria-label="قیمت خرید" type="number" value={variant.purchase_price} onChange={(event) => setVariant({ ...variant, purchase_price: event.target.value })} /><MoneyInWords value={variant.purchase_price} /></label></div><label>قیمت فروش<input aria-label="قیمت فروش" type="number" value={variant.sale_price} onChange={(event) => setVariant({ ...variant, sale_price: event.target.value })} /><MoneyInWords value={variant.sale_price} /></label><button className="secondary-button" onClick={() => { if ((!variant.without_size && !variant.size.trim()) || !variant.purchase_price || !variant.sale_price) { setError('نوع موجودی و قیمت‌ها را کامل کنید.'); return } variantMutation.mutate() }}><PackagePlus /> {variant.without_size ? 'افزودن محصول بدون سایز' : 'افزودن سایز'}</button></section>}
     {error && <p className="form-alert">{error}</p>}
     <button className="danger-button" onClick={() => window.confirm('محصول و تمام سایزهای آن حذف شوند؟') && deleteMutation.mutate()}><Trash2 /> حذف محصول</button>
     {priceModalOpen && <BulkSalePriceModal product={product} onClose={() => setPriceModalOpen(false)} onSuccess={onPriceUpdated} />}
+    {imageViewerOpen && displayedImage && <div className="product-image-lightbox" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setImageViewerOpen(false)}><section role="dialog" aria-modal="true" aria-label={`تصویر بزرگ ${product.name}`}><button type="button" onClick={() => setImageViewerOpen(false)} aria-label="بستن تصویر"><X /></button><img src={displayedImage} alt={`تصویر بزرگ ${product.name}`} /></section></div>}
   </div>
 }
 
@@ -127,7 +179,7 @@ export function SaleDetailPage() {
   return <div className="page detail-page">
     <div className="subpage-heading"><Link to="/sales"><ArrowRight /></Link><div><h2>{title}</h2><p>{new Date(sale.created_at).toLocaleString('fa-IR')}</p></div></div>
     <section className="sale-total card"><ShoppingBag /><div><span>مبلغ نهایی</span><strong>{Number(sale.total_amount).toLocaleString('fa-IR')} <small>تومان</small></strong></div><StatusBadge tone={meta.tone}>{meta.label}</StatusBadge></section>
-    <section className="invoice-items"><h3>اقلام فاکتور</h3>{sale.items.map((item) => <article className="invoice-row card" key={item.id}><span className="product-visual compact">👟</span><div><strong>{item.product_name}</strong><small>{variantSizeLabel(item.size)} · تعداد {item.quantity.toLocaleString('fa-IR')}</small></div><span><strong>{Number(item.final_price).toLocaleString('fa-IR')}</strong><small>تومان</small></span></article>)}</section>
+    <section className="invoice-items"><h3>اقلام فاکتور</h3>{sale.items.map((item) => <article className="invoice-row card" key={item.id}><span className="product-visual compact" role="img" aria-label={`تصویر پیش‌فرض ${item.product_name}`}><Box aria-hidden="true" /></span><div><strong>{item.product_name}</strong><small>{variantSizeLabel(item.size)} · تعداد {item.quantity.toLocaleString('fa-IR')}</small></div><span><strong>{Number(item.final_price).toLocaleString('fa-IR')}</strong><small>تومان</small></span></article>)}</section>
     <section className="sale-meta card"><div><span>کانال فروش</span><strong>{sale.channel}</strong></div><div><span>روش پرداخت</span><strong>{sale.payment_method}</strong></div><div><span>مشتری</span><strong>{sale.customer_name ?? 'بدون مشتری'}</strong></div></section>
     {sale.status === 'completed' && sale.completed_at && <section className="sale-completed-at card"><CheckCircle2 /><span><small>زمان تکمیل فروش</small><strong>{new Date(sale.completed_at).toLocaleString('fa-IR')}</strong></span></section>}
     {sale.status === 'completed' && <button className="danger-button" onClick={() => window.confirm('فروش لغو و موجودی کالاها بازگردانده شود؟') && cancelMutation.mutate()}><Ban /> لغو فروش و بازگردانی موجودی</button>}

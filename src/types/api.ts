@@ -55,10 +55,18 @@ export type Product = {
   id: number
   name: string
   description: string
+  image: string | null
   categories: number[]
   variants: ProductVariant[]
   created_at: string
   updated_at: string
+}
+
+export type CreateProductInput = {
+  name: string
+  description: string
+  categories: number[]
+  image?: File | null
 }
 
 export type UpdateProductSalePriceInput = {
@@ -126,7 +134,17 @@ export type WantedProduct = {
   brand: string
   size: string
   wanted_count: number
+  cover_image: string | null
   created_at: string
+}
+
+export type CreateWantedInput = {
+  customer: number
+  product?: number | null
+  product_name: string
+  brand: string
+  size: string
+  image?: File | null
 }
 
 export type WantedCustomerRequest = {
@@ -136,6 +154,7 @@ export type WantedCustomerRequest = {
   customer_phone_number: string | null
   created_by: number | null
   created_by_name: string | null
+  image: string | null
   created_at: string
 }
 

@@ -26,4 +26,16 @@ describe('apiRequest', () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new TypeError('offline'))
     await expect(apiRequest('/resource/')).rejects.toThrow('ارتباط با سرور برقرار نشد')
   })
+
+  it('does not set Content-Type manually for FormData bodies', async () => {
+    const formData = new FormData()
+    formData.append('image', new File(['image'], 'shoe.png', { type: 'image/png' }))
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({ id: 7 }), { status: 200 }))
+
+    await apiRequest('/resource/', { method: 'POST', body: formData })
+
+    const request = fetchMock.mock.calls[0][1] as RequestInit
+    expect(request.body).toBe(formData)
+    expect((request.headers as Headers).has('Content-Type')).toBe(false)
+  })
 })

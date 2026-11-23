@@ -150,6 +150,7 @@ describe('dashboard, sales, and reports UI', () => {
       id: 1,
       name: 'Air Max',
       description: '',
+      image: null,
       categories: [],
       created_at: '',
       updated_at: '',
@@ -163,5 +164,25 @@ describe('dashboard, sales, and reports UI', () => {
     fireEvent.change(screen.getByLabelText('تخفیف'), { target: { value: '1000000' } })
 
     expect(screen.getByText('یک میلیون تومان')).toBeInTheDocument()
+  })
+
+  it('shows the product image for an invoice item while creating a sale', async () => {
+    vi.mocked(getAllProducts).mockResolvedValueOnce([{
+      id: 1,
+      name: 'Air Max',
+      description: '',
+      image: 'https://api.example.com/media/products/air-max.png',
+      categories: [],
+      created_at: '',
+      updated_at: '',
+      variants: [{ id: 4, size: '40', without_size: false, purchase_price: '4000000', sale_price: '5800000', current_stock: 2 }],
+    }])
+    renderPage(<SaleCreatePage />)
+
+    fireEvent.change(await screen.findByLabelText('محصول'), { target: { value: '1' } })
+    fireEvent.change(screen.getByLabelText('سایز / نوع'), { target: { value: '4' } })
+    fireEvent.click(screen.getByRole('button', { name: /افزودن به فاکتور/ }))
+
+    expect(screen.getByRole('img', { name: 'تصویر Air Max' })).toHaveAttribute('src', 'https://api.example.com/media/products/air-max.png')
   })
 })

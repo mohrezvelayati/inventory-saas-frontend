@@ -1,6 +1,6 @@
 import { apiRequest } from '../../lib/api'
 import { getAllResults } from '../../lib/pagination'
-import type { Category, PaginatedResponse, Product, ProductVariant, UpdateProductSalePriceInput } from '../../types/api'
+import type { Category, CreateProductInput, PaginatedResponse, Product, ProductVariant, UpdateProductSalePriceInput } from '../../types/api'
 
 export type VariantInput = {
   size?: string
@@ -32,8 +32,23 @@ export function getProduct(id: number) {
   return apiRequest<Product>(`/catalog/products/${id}/`)
 }
 
-export function updateProduct(id: number, input: { name: string; description: string; categories: number[] }) {
-  return apiRequest<Product>(`/catalog/products/${id}/`, { method: 'PATCH', body: JSON.stringify(input) })
+export type ProductInput = CreateProductInput
+export type UpdateProductInput = ProductInput
+
+function productRequestBody(input: ProductInput) {
+  const image = input.image
+  if (typeof File === 'undefined' || !(image instanceof File)) return JSON.stringify(input)
+
+  const formData = new FormData()
+  formData.append('name', input.name)
+  formData.append('description', input.description)
+  input.categories.forEach((id) => formData.append('categories', String(id)))
+  formData.append('image', image)
+  return formData
+}
+
+export function updateProduct(id: number, input: UpdateProductInput) {
+  return apiRequest<Product>(`/catalog/products/${id}/`, { method: 'PATCH', body: productRequestBody(input) })
 }
 
 export function updateProductSalePrice(id: number, input: UpdateProductSalePriceInput) {
@@ -76,15 +91,9 @@ export function deleteCategory(id: number) {
   return apiRequest<void>(`/catalog/categories/${id}/`, { method: 'DELETE' })
 }
 
-export type CreateProductInput = {
-  name: string
-  description: string
-  categories: number[]
-}
-
 export function createProduct(input: CreateProductInput) {
   return apiRequest<Product>('/catalog/products/', {
     method: 'POST',
-    body: JSON.stringify(input),
+    body: productRequestBody(input),
   })
 }
